@@ -1,5 +1,0 @@
-triangular_matrix_seq_41.npy
-triangular_matrix_seq_39.npy
-triangular_matrix_seq_1.npy
-triangular_matrix_seq_20.npy
-triangular_matrix_seq_16.npy

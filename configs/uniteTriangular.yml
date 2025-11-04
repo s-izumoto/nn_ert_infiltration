@@ -6,7 +6,7 @@ filename_pattern: "triangular_matrix_seq_*.npy"
 train_out: data/unitedMatrix/united_triangular_matrices.npy
 test_out:  data/unitedMatrix/united_triangular_matrices_test.npy
 save_filelists: true              # 使用したファイル名リストも保存する
-filelists_prefix: "united"        # united_train_filenames.txt / united_test_filenames.txt
+filelists_prefix: "data/unitedMatrix/united"        # united_train_filenames.txt / united_test_filenames.txt
 
 # 分割数
 train_count: 45
