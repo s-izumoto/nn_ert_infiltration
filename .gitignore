@@ -22,6 +22,7 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 jupyter_cache/
+notebook/**
 
 # VS Code
 .vscode/*

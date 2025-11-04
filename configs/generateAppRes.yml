@@ -22,8 +22,8 @@ y_min: 0.0
 # Electrodes (left edge)
 electrodes:
 y:
-start: 0.9
-end: 2.1
+start: 0.88
+end: 2.12
 n: 32 # number of equally spaced electrodes between start..end
 
 
