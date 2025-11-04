@@ -1,10 +1,83 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 04_generateTrainingData.py
---------------------------
-Generate measured resistivity datasets from true resistivity maps using
-a predefined sequence of measurement positions. The same sequence can
-be applied to both training and test datasets for consistency.
+==========================
+Purpose
+-------
+Generate *measured* resistivity datasets from *true* resistivity maps by
+simulating a sequential measurement process at predefined (column, row)
+positions. The same position sequence can be reused for both training and
+test sets so that model evaluation is consistent with training.
+
+High-level Workflow
+-------------------
+1) Load a 4D true-resistivity tensor (N, T, H, W) and a set of candidate
+   measurement position sequences (S, T, 2).
+2) Select ONE representative position sequence:
+   - "median": pick the sequence closest to the per-time-step median (robust).
+   - "fixed":  use the provided fixed_index.
+3) For each sequence n=0..N-1:
+   - Initialize measured_map = true[n, t=0].
+   - For t = 1..T' (clipped by position length):
+       * Read (c, r) from the selected position sequence at t-1.
+       * Update measured_map[r, c] = true[n, t][r, c] (only that pixel).
+       * Record the updated measured_map for time t.
+4) Save the stacked measured maps as a NumPy array:
+   shape = (N, T'-1, H, W). Optionally do the same for a test set using
+   the *same* position sequence.
+
+Input Data & Shapes
+-------------------
+- True resistivity (train): (N, T, H, W) np.float32/np.float64
+- True resistivity (test):  (N_test, T_test, H, W) [optional]
+- Positions (candidates):   (S, T, 2) with 0-based integer coordinates
+  * positions[s, t] = [col, row]
+  * Only one sequence (S=1) is also allowed.
+
+Key Behaviors & Assumptions
+---------------------------
+- NaN values in true data are replaced with 0.0 to avoid propagation.
+- Only the single pixel (r, c) is updated per time step (num_measurements=1).
+- Time dimension may be clipped: T' = min(T, positions_seq_len + 1).
+- Output time length is T'-1 because t=0 initializes the measured map.
+- File naming embeds the chosen sequence index for traceability.
+
+Configuration (YAML)
+--------------------
+Required keys:
+- input_dir         : directory containing train/test .npy files
+- positions_dir     : directory containing positions .npy
+- output_dir        : directory for outputs (created if missing)
+- train_file        : filename of training true data, e.g. "united_triangular_matrices.npy"
+- positions_file    : filename of positions, e.g. "positions_all.npy"
+
+Optional keys:
+- test_file         : filename of test true data (if provided, test is processed)
+- sequence_selection:
+    mode            : "median" (default) or "fixed"
+    fixed_index     : int (required if mode == "fixed")
+- num_measurements  : int (default 1; current code path assumes 1)
+- save_basename     : base for output filenames (default "measured_training_data_sameRowColSeq")
+- save_seq_index    : bool, save chosen_seq_index.npy (default True)
+
+Outputs
+-------
+- <output_dir>/<save_basename><seq_for_rc>.npy
+    shape (N, T'-1, H, W), dtype float32
+- <output_dir>/<save_basename><seq_for_rc>_test.npy  [if test_file exists]
+    shape (N_test, T_test'-1, H, W)
+- <output_dir>/chosen_seq_index.npy  (int)  [if save_seq_index=True]
+
+CLI Example
+-----------
+python 04_generateTrainingData.py --config configs/generate_training.yml
+
+Performance Tips
+----------------
+- This is memory-bound for large (N, T, H, W). If RAM is constrained:
+  * Process sequences in chunks (extend code to stream or memmap).
+  * Ensure .npy files are saved with float32 when possible.
 """
 
 import os
