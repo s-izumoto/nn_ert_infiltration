@@ -1,0 +1,47 @@
+
+inputs:
+  measured_dir: data/training
+  measured_file: training_data34.npy
+  united_dir: data/unitedMatrix
+  united_file: united_triangular_matrices.npy
+
+preprocess:
+  # 元コードのフラグ（意味は同じ）。YAMLが最優先です
+  early: true            # 先頭50タイムだけ使う
+  early_limit: 50        # early=true時の使用タイム数
+  choose_index: []       # 例: [26,37,31] で対象シーケンスを抽出
+  sparse: true           # タイムを間引く
+  sparse_stride: 10      # 例: ::10
+  diff: true             # 時間微分（np.diff）
+  time_context: false    # 時刻tの正規化番号を特徴に付ける
+  normalization: false   # min-max正規化（入力/出力を別々に）
+  mean_centered: true    # 時刻ごとに平均を引く
+  time_steps: 4          # エンコーダの時系列長
+
+model:
+  hidden_size: 512
+  num_layers: 2
+
+training:
+  lrs: [1e-3, 5e-4, 1e-4]
+  batch_sizes: [4, 8, 16]
+  kfolds: 5
+  epochs: 100
+  seed: 42
+  retrain_best: true     # ベスト設定で80/20再学習＋保存
+  num_workers: 0         # DataLoader workers（Windows推奨: 0）
+
+outputs:
+  base_dir: data/trained/first           # すべての成果物のベースディレクトリ
+  grid_search_csv: grid_search_results.csv
+  best_config_txt: best_config.txt
+  cv_indices_npz: best_cv_indices.npz
+  retrain_indices_npz: best_retrain_indices.npz
+  mean_values_npz: mean_values_first.npz
+  best_model_pt: best_model_first.pt
+  single_payload_pt: single_output_lstm_model.pt
+  loss_history_csv: loss_history_best_retrain.csv
+  loss_curve_png: loss_curve_best_retrain_first.png
+  # 正規化パラメータ（保存先ファイル名）
+  norm_in_npz: normalization_factors_first.npz
+  norm_out_npz: normalization_factors_output_first.npz

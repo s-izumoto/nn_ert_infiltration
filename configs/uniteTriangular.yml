@@ -1,0 +1,19 @@
+# 入力
+input_folder: data/simulationAppRes
+filename_pattern: "triangular_matrix_seq_*.npy"
+
+# 出力
+train_out: data/unitedMatrix/united_triangular_matrices.npy
+test_out:  data/unitedMatrix/united_triangular_matrices_test.npy
+save_filelists: true              # 使用したファイル名リストも保存する
+filelists_prefix: "united"        # united_train_filenames.txt / united_test_filenames.txt
+
+# 分割数
+train_count: 45
+test_count: 5
+
+# 乱数シード（null にすると完全ランダム）
+seed: 42
+
+# 形状チェック
+strict_shape: true                # 最初のファイルの形状と全ファイルが一致するか検証

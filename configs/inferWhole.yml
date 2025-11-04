@@ -1,0 +1,35 @@
+
+inputs:
+  # 06_evaluateModel.py が出すまとめファイル（diffの時系列）
+  seq2seq_dir: data/output/sequence
+  seq2seq_file: training_data34_test__pred_sequence.npy   # shape: (N, T, R, C)
+
+  # 08_useModel_AppResAppRes_seq2seq_onlyFirst_loop.py が出す最初ターゲット時刻の diff 1枚
+  initial_dir: data/output/first
+  initial_file: pred_images_all.npy           # shape: (N, R, C)
+
+  # 真値（電気伝導度のもと → 1/x*1000 へ変換して使用）
+  true_dir: data/unitedMatrix
+  true_file: united_triangular_matrices_test.npy   # shape: (N, T_full, R, C)
+
+# === 処理パラメータ ===
+processing:
+  num_measurements: 10             # 何ステップごとに真値を間引くか（元コード準拠）
+  scale: 1000.0                    # 安全な 1/x 変換での倍率（1/x * scale）
+  eps: 1.0e-8                      # 0割回避しきい値
+  clip: 1.0e6                      # 変換後のクリップ上限（±clip）
+  drop_duplicate_first_diff: true  # seq2seq 最初の1枚が initial と同一なら捨てる
+
+# === 可視化 ===
+viz:
+  enabled: true                    # 画像保存するか
+  chosen_sequences: [0, 1, 2, 3, 4, 5]   # 可視化対象シーケンス
+  cmap_value: "hot"               # 値の可視化 cmap
+  cmap_diff: "coolwarm"           # 差分の可視化 cmap
+
+# === 出力 ===
+output:
+  dir: data/output/whole         # 画像と結果を保存するフォルダー
+  mape_txt: mape_values.txt        # MAPE 結果のテキスト
+  stack_file: conductivity.npy      # 予測「値」時系列のスタック（可変長は最短に揃えて保存）
+  image_prefix: measurement_locations_seq   # 画像ファイルの接頭辞

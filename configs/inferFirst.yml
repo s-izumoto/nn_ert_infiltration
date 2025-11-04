@@ -1,0 +1,49 @@
+# ==== モデル ====
+model:
+  checkpoint: "data/trained/first/single_output_lstm_model.pt"   # 学習時に保存したpt
+  device: "auto"               # "auto" | "cpu" | "cuda"
+  override_time_steps: null     # null なら ckpt の time_steps を使用（推奨）
+
+# ==== データ入出力 ====
+data:
+  measured_dir: "data/training"     # measured のあるフォルダ
+  measured_file: "training_data34_test.npy"
+
+  truth_dir: "data/unitedMatrix"        # 真値 united_* のあるフォルダ
+  truth_file: "united_triangular_matrices_test.npy"
+
+  invert_values: true           # 1/x を使う（学習と整合）
+  unit_scale: 1000.0            # スケール係数
+  prepend_initial_truth: true   # t0 の真値を measured の先頭に付ける
+  nan_fill_value: 0.0
+
+# ==== 正規化／平均 ====
+norm:
+  enabled: false                # 学習時に正規化している場合だけ true
+  dir: "data/trained/first"              # npz を置いたフォルダ
+  normalization_factors: "normalization_factors_first.npz"  # tmin/tmax を格納
+  mean_values: "mean_values_first.npz"                      # Xmean/ymean を格納
+
+# ==== フラグ（学習時のものを尊重。必要時のみ上書き） ====
+flags:
+  early: null                   # null=ckpt既定 / true/false で上書き
+  early_max_T: 50               # early=true 時の最大タイム長
+  choose_index_enabled: null    # null / true / false
+  choose_indices: [26, 37, 31, 19, 36, 28, 38, 18, 15]
+  sparse_enabled: null          # null / true / false
+  sparse_stride: 10
+  diff_enabled: null            # null / true / false  （差分学習時は true）
+  time_context_enabled: null    # null / true / false
+  mean_centered_enabled: null   # null / true / false  （学習が mean-centered なら true）
+
+# ==== 出力 ====
+io:
+  output_dir: "data/output/first"
+  save_figures: true
+  save_pred_stack: true
+  cmap: "viridis"
+
+# ==== 可視化 ====
+visual:
+  save_compare: true            # 予測 vs 真値 の並列図
+  save_input_frames: true       # 入力 T 枚のフレーム画像

@@ -1,0 +1,18 @@
+# === 入力 ===
+input_dir: data/unitedMatrix              # train/test/positions を探す基準フォルダ
+train_file: united_triangular_matrices.npy
+test_file: united_triangular_matrices_test.npy   # ない場合は無視されます
+positions_dir: data/design
+positions_file: measurement_indices.npy           # (S, T, 2)
+
+# === 測定ロジック ===
+num_measurements: 1          # 1タイムステップで選ぶ測定点の数（現状は1のみ有効）
+# 代表シーケンスの決め方
+sequence_selection:
+  mode: "median"             # "median" か "fixed" を選択
+  fixed_index: null          # mode=fixed のときに使う整数（例: 31）
+
+# === 出力 ===
+output_dir: data/training
+save_seq_index: true         # 選ばれたシーケンスIDを保存
+save_basename: training_data  # 出力の接頭辞

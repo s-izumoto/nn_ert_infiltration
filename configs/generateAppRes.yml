@@ -1,0 +1,42 @@
+# Input/Output
+data_path: data/simulationData/combined_conductivity_maps.npy
+output_dir: data/simulationAppRes
+
+
+# Measurement scheme & physics
+scheme: wa # Wenner-alpha (pyGIMLi's createData schemeName)
+noise:
+level: 0.5 # relative noise level passed to ert.simulate
+abs: 1.0e-6 # absolute noise floor
+seed: 1337 # RNG seed for pyGIMLi simulate
+
+
+# Geometry (2D rectangle domain)
+domain:
+width: 1.0 # x in [x_min, x_max] with length = width
+height: 3.0 # y in [y_min, y_max] with length = height
+x_min: 0.0
+y_min: 0.0
+
+
+# Electrodes (left edge)
+electrodes:
+y:
+start: 0.9
+end: 2.1
+n: 32 # number of equally spaced electrodes between start..end
+
+
+# Triangular packing for Wenner-alpha (rows shrink by step each level)
+triangular:
+first_row: 29 # number of measurements in the first row
+step: 3 # decrement per row (29, 26, 23, ..., 2)
+
+
+# Parallelism (can be overridden by --workers)
+parallel:
+max_workers: auto # "auto" -> min(CPU,4). Or set an integer.
+
+
+# Optional: restrict to certain sequence indices (0-based). If null/omitted, process all.
+sequences: null

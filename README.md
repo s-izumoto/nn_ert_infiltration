@@ -3,42 +3,44 @@
 
 ## 🚀 Pipeline Workflow
 
-1. **Generate resistivity fields**  
+1. **Generate measured apparent resisitivity data from simulated data**  
    ```bash
-   python scripts/01_make_fields.py --config configs/data/make_fields.yml
+   python scripts/01_generateAppRes.py --config configs/generateAppRes.yml
    ```
 
-2. **Fit PCA and project fields**  
+2. **Reshape the data and separate it in trainind+validation data and test data**  
    ```bash
-   python scripts/02_fit_pca_and_project.py --config configs/pca/pca_randomized.yml
+   python scripts/02_unitedTriangular.py --config configs/unitedTriangular.yml
    ```
 
-3. **Simulate ERT measurements in all the arrays (pyGIMLi physics forward)**  
-
-
+3. **Decide measurement design**  
    ```bash
-   python scripts/03_make_surrogate_pairs_all.py --config configs/simulate/make_surrogate_pairs_all.yml
+   python scripts/03_generateMeasDesign.py --config configs/generateMeasDesign.yml
    ```
 
-4. **Simulate ERT measurements in Wenner array (pyGIMLi physics forward)**  
+4. **Genereate training data**  
    ```bash
-   python scripts/04_make_surrogate_pairs_wenner.py --config configs/simulate/make_surrogate_pairs_wenner.yml
+   python scripts/04_generateTrainingData.py --config configs/generateTrainingData.yml
    ```
 
-5. **Inversion of Wenner array**  
+5. **Train NN for predicting sequence**  
    ```bash
-   python scripts/05_make_surrogate_wenner_invert.py --config configs/simulate/wenner_invert.yml
+   python scripts/05_trainingSequence.py --config configs/trainingSequence.yml
    ```
 
-6. **Gaussian process regression (GPR)**  
+6. **Infer sequence from test data**  
    ```bash
-   python scripts/06_gpr_sequential_design.py --config configs/gpr/gpr_seq_example.yml
+   python scripts/06_inferSequence.py --config configs/inferSequence.yml
    ```
 
-7. **Inversion of GPR results**  
+7. **Train NN for predicting first data**  
    ```bash
-   python scripts/07_invert_from_npz.py --config configs/inversion/inversion.yml
+   python scripts/07_trainingFirst.py --config configs/trainingFirst.yml
    ```
 
+8. **Train NN for predicting first data**  
+   ```bash
+   python scripts/07_trainingFirst.py --config configs/trainingFirst.yml
+   ```
 
 ---

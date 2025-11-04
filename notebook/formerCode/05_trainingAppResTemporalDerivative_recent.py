@@ -14,6 +14,8 @@ import math
 import random
 import numpy as np
 from pathlib import Path
+import csv
+
 # ← matplotlib はインポートしない
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -79,16 +81,33 @@ def de_create_array(flat_data: np.ndarray) -> np.ndarray:
 # 期待ファイル:
 # - measured_training_data_sameRowColSeq31.npy
 # - united_triangular_matrices.npy
-measured = 1 / np.load('measured_training_data_sameRowColSeq31.npy') * 1000.0
-united = 1 / np.load('united_triangular_matrices.npy') * 1000.0
+# A) 元配列を読み込み（float32化）
+_measured_raw = np.load('measured_training_data_sameRowColSeq31.npy').astype(np.float32)
+_united_raw   = np.load('united_triangular_matrices.npy').astype(np.float32)
 
-initial_data = (1 / np.load('united_triangular_matrices.npy')[:, 0, :, :] * 1000.0).astype(np.float32)
-initial_data = np.expand_dims(initial_data, axis=1)  # (N,1,H,W)
+# B) ゼロ割りを避けて安全に「1000/x」を計算（abs(x) <= eps は 0 とみなす）
+eps = 1e-6
 
-input_data = np.concatenate((initial_data, measured), axis=1)
-input_data = np.nan_to_num(input_data, nan=0.0).astype(np.float32)
+def safe_inverse_k(x):
+    out = np.empty_like(x, dtype=np.float32)
+    np.divide(1000.0, x, out=out, where=np.abs(x) > eps)
+    out[np.abs(x) <= eps] = 0.0
+    # ∞/NaN を明示的に無害化（posinf/neginf を必ず指定）
+    out = np.nan_to_num(out, nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
+    # 外れ値の安全クリップ（範囲は必要に応じて調整）
+    out = np.clip(out, -1e6, 1e6)
+    return out
 
-output_data = np.nan_to_num(united, nan=0.0).astype(np.float32)
+measured = safe_inverse_k(_measured_raw)             # (N, T, H, W)
+united   = safe_inverse_k(_united_raw)               # (N, T, H, W)
+
+# 初期データ（t=0 の united を逆数化）
+initial_data = safe_inverse_k(_united_raw[:, 0:1, :, :])  # (N,1,H,W)
+
+# C) 入出力テンソルの構成（NaN/∞ は既に除去済みだが念のため二重化OK）
+input_data  = np.concatenate((initial_data, measured), axis=1).astype(np.float32)
+input_data  = np.nan_to_num(input_data,  nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
+output_data = np.nan_to_num(united,      nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
 
 if early:
     input_data = input_data[:, :310, :, :]
@@ -251,6 +270,7 @@ opt  = torch.optim.Adam(model.parameters(), lr=lr)
 
 # ====== 学習ループ ======
 train_losses, val_losses = [], []
+best_vloss = float("inf")
 
 for ep in range(1, epochs + 1):
     model.train()
@@ -285,7 +305,20 @@ for ep in range(1, epochs + 1):
     val_losses.append(vloss)
     print(f"[epoch {ep:02d}] train_loss={tloss:.6f}  val_loss={vloss:.6f}")
 
-import csv
+    if vloss < best_vloss:
+        best_vloss = vloss
+        torch.save(model.state_dict(), "best_model.pt")
+
+        print(f"[save] best_model.pt updated (val_loss={vloss:.6f})")
+
+torch.save({
+    "epoch": epochs,
+    "model_state_dict": model.state_dict(),
+    "optimizer_state_dict": opt.state_dict(),
+    "val_loss": val_losses[-1] if len(val_losses) else float("nan"),
+}, "last_model.pt")
+print("[save] last_model.pt saved")
+
 
 def save_loss_curve_png_pillow(train_losses, val_losses, out_path="loss_curve_pytorch.png",
                                size=(1200, 480), margin=60):

@@ -1,0 +1,24 @@
+# === 入力 ===
+input_file: data/unitedMatrix/united_triangular_matrices.npy  # もとの真値スタック（NaNは後で置換）
+nan_fill_value: 0.0                            # NaNを置き換える値
+time_stride: 1                                 # 時間方向の間引き（1=間引きなし）
+
+# === 測定ロジック ===
+num_measurements: 1        # 1タイムステップで選ぶ測定点の数（最大差分のtop-k）
+save_probability: false    # （将来拡張）確率マップも保存したければtrue
+
+# === 可視化 ===
+save_frames: true          # 可視化フレームPNGを保存するか
+frame_output_dir: data/design/frames
+frame_seq_index: 5         # 可視化対象のシーケンスID（存在する範囲で）
+cmap: "hot"                # imshowのcmap
+
+# === 出力 ===
+measured_output: data/design/measured_training_data.npy    # 推移の「測定済みマップ」配列
+indices_output: data/design/measurement_indices.npy        # 各時刻に選ばれた(列, 行)のペア（整数）
+# （必要なら確率マップの保存先も later で追加可能）
+# 既存の設定に追加してください
+
+progress: "bar"          # "bar" / "print" / "none"
+progress_leave: false    # true で完了後もバーを残す
+progress_seq_every: 5    # print モード時のシーケンス進捗の表示間隔

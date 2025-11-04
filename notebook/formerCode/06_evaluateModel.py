@@ -133,7 +133,7 @@ class Seq2Seq(nn.Module):
 
 def load_data():
     # scale 1/x * 1000 as in the TF script
-    input_data = 1.0 / np.load('measured_training_data_sameRowColSeq31.npy') * 1000.0
+    input_data = 1.0 / np.load('measured_training_data_sameRowColSeq43.npy') * 1000.0
     initial_data = 1.0 / np.load('united_triangular_matrices.npy')[:, 0, :, :] * 1000.0
     initial_data = np.expand_dims(initial_data, axis=1)
     input_data = np.concatenate((initial_data, input_data), axis=1)

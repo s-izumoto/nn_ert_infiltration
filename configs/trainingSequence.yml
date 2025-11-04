@@ -1,0 +1,55 @@
+# =========================
+# 05_trainingAppResTemporalDerivative 用 設定
+# フォルダー/ファイルどちらでもOK
+# =========================
+
+# === 入出力 ===
+paths:
+  # measured, united ともに「.npy/.npz のファイル」または
+  # 「.npy/.npz を複数含むフォルダー」のどちらでも指定可能
+  measured: "data/training/training_data34.npy"            # 例: フォルダー（*.npy, *.npz を昇順で読み込み、先頭次元Nで結合）
+  united:   "data/unitedMatrix/united_triangular_matrices.npy"             # 例: フォルダー
+  results_dir: "data/trained/sequence"           # 出力先フォルダー（CSV, モデル, 画像など）
+
+  # .npz を使う場合のみ：内部キー名を明示したいときに指定（未指定なら最初のキーを使用）
+  measured_npz_key: null
+  united_npz_key: null
+
+# === 前処理フラグ（元コード準拠） ===
+preprocess:
+  early: true            # 先頭310ステップに制限（元コードの early）
+  chooseIndex: false     # 特定のシリーズのみ抽出
+  sparce: true           # 時間を間引き（元コードの ::10）
+  diff: true             # 時間差分（np.diff）
+  timeContext: false     # 入力ベクトルに time 比率（0..1）を連結
+  normalization: false   # 時間ステップごとの min-max 正規化
+  meanCentered: true     # (時刻tごとに) 全サンプル平均を引く
+
+# chooseIndex=true のときのみ適用（シリーズ番号）
+choose_indices: [26, 37, 31, 19, 36, 28, 38, 18, 15]
+
+# === シーケンス設定 ===
+sequence:
+  time_steps: 30           # エンコーダに入れる連続時刻数
+  output_seq_length: 29    # デコーダ出力の時刻数（teacher forcing 入力も29）
+
+# === モデル設定 ===
+model:
+  enc_hidden: 512
+  dec_hidden: 512
+
+# === 学習（グリッドサーチ） ===
+train:
+  lrs: [1.0e-3, 5.0e-4, 1.0e-4]
+  batch_sizes: [4, 8, 16]
+  kfolds: 5
+  epochs: 40
+  seed: 42
+  retrain_best: true     # ベスト設定で80/20再学習＆best_model.pt保存
+
+# === 追加出力 ===
+artifacts:
+  save_loss_curve_png: true   # Pillow があればPNGの学習曲線も保存
+
+# === 実行タグ（任意）：スクリプト側で results_dir/run_tag のように結合して使う場合に便利 ===
+run_tag: null   # 例: "2025-11-04A" など。未使用なら null のままでOK
