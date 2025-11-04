@@ -1,16 +1,121 @@
 # -*- coding: utf-8 -*-
 """
 Script Name: 08_inferFirst.py
+Purpose:
+    Perform first-step image prediction using a trained LSTM regressor for ERT-style
+    triangular grids. Given a short input sequence of 2D maps, the model predicts
+    the target 2D map at the first supervised step (t = 0 after preprocessing),
+    reproducing the exact preprocessing and data layout used during training.
 
-This script performs inference for the first-step prediction task using a trained LSTM model.
-It was refactored from `08_useModelFirstImage.py` with the following improvements:
-- Configuration is loaded from a YAML file.
-- Input and output are directory-based (not hard-coded file paths).
-- Preprocessing and network architecture are consistent with training.
+Key Features:
+    - Configuration-driven: all paths and options are read from a YAML file.
+    - Folder-based I/O: measured input stacks and ground-truth stacks are loaded
+      from directories; results and figures are saved to an output folder.
+    - Training parity: preprocessing flags (diff/sparse/timeContext/meanCentered/early)
+      and dimensionalities are enforced to match the training checkpoint.
+    - Triangular grid support: uses compact flattening of a triangular matrix with
+      row sizes [29, 26, 23, ..., 2, 1] (step -3) for both inputs and outputs.
+    - Unit handling: optional inversion (1/value) and scaling (e.g., to mS/m).
+    - Visualization: per-series comparison PNGs with consistent color scales and
+      optional input-sequence frames; NumPy stack of all predicted images is saved.
 
-The model predicts a 2D conductivity (or resistivity) map for the first time step
-based on a sequence of input maps. Visualization and saving options are also configurable.
+Typical Use Case:
+    Evaluate how well the trained LSTM reconstructs the first-step 2D conductivity
+    (or resistivity) map from a short history of measured maps in a dynamic
+    infiltration scenario. This is useful for sanity-checking the trained model and
+    for producing qualitative figures and quick diagnostics.
+
+Inputs (read from YAML):
+    model.checkpoint           : Path to a PyTorch checkpoint (.pt/.pth) that contains:
+                                 - model_state_dict
+                                 - input_dim, output_dim
+                                 - time_steps (unless overridden)
+                                 - flags used during training (early, diff, etc.)
+    model.device               : "auto" | "cuda" | "cpu" (default: auto)
+    model.override_time_steps  : Optional int to override the checkpoint time_steps.
+
+    data.measured_dir          : Folder containing the measured stack .npy
+    data.measured_file         : Filename of measured stack (shape ≈ (N, T-1, H, W))
+    data.truth_dir             : Folder containing the ground-truth stack .npy
+    data.truth_file            : Filename of truth stack (shape ≈ (N, T,   H, W))
+    data.invert_values         : If True, apply 1/x to measured and truth
+    data.unit_scale            : Multiplicative scale (e.g., 1000 for S/m → mS/m)
+    data.prepend_initial_truth : If True, prepend united[:,0] to measured along time
+    data.nan_fill_value        : Value used to replace NaNs before processing
+
+    norm.enabled               : If True, apply min–max scaling using:
+    norm.dir                   : Directory of normalization files
+    norm.normalization_factors : .npz with keys: time_step_min, time_step_max
+    norm.mean_values           : .npz with keys: Xmean (T × F_in), ymean (T × F_out)
+                                 Required if meanCentered is True.
+
+    flags.early                : If True, truncate time dimension to flags.early_max_T
+    flags.early_max_T          : Max time length when early is True
+    flags.choose_index_enabled : If True, restrict to subset of series by index list
+    flags.choose_indices       : List of integer series indices
+    flags.sparse_enabled       : If True, stride time with flags.sparse_stride
+    flags.sparse_stride        : Positive integer stride along time axis
+    flags.diff_enabled         : If True, replace sequences with np.diff(..., axis=1)
+    flags.time_context_enabled : If True, append normalized time context to each input
+    flags.mean_centered_enabled: If True, subtract Xmean at input and add ymean at output
+
+    io.output_dir              : Output folder for PNGs and .npy artifacts
+    io.save_figures            : If True, save comparison and/or input frames
+    io.save_pred_stack         : If True, save all predictions as one .npy stack
+    io.cmap                    : Matplotlib colormap name (e.g., "viridis")
+
+    visual.save_compare        : If True, export side-by-side Predicted vs True PNG
+    visual.save_input_frames   : If True, export per-time-step input frames PNG
+
+Data Shapes (after loading, before flags):
+    measured: (N, T-1, H, W)
+    united  : (N, T,   H, W)
+    If data.prepend_initial_truth is True, input_data becomes (N, T, H, W) by
+    concatenating united[:,0] at the front of measured along time.
+
+Preprocessing Pipeline (must match training):
+    1) Optional invert and unit scaling:
+         measured = unit_scale * (1 / measured)    if invert_values
+         united   = unit_scale * (1 / united)      if invert_values
+    2) Replace NaNs with data.nan_fill_value.
+    3) If prepend_initial_truth: input_data = concat(united[:,0], measured, axis=1)
+       else:                     input_data = measured
+    4) Apply flags in order:
+         - early:  truncate time dimension to early_max_T
+         - chooseIndex: subset the batch dimension by choose_indices
+         - sparse: time subsampling with stride sparse_stride
+         - diff:   take first differences along time axis for both input and output
+    5) If norm.enabled: min–max scale input_data using normalization_factors .npz
+    6) If meanCentered: subtract Xmean from encoder inputs; after prediction add
+       ymean[0] back to the decoded output (first-step target).
+
+Model I/O (triangular grid):
+    - Each 2D (H × W) triangular map is flattened by row sizes [29, 26, ..., 1].
+      The helper functions `create_array` and `de_create_array` implement the
+      reversible flattening.
+    - input_dim, output_dim, and time_steps are loaded from the checkpoint
+      (or overridden). These must be consistent with the trained model.
+
+Outputs:
+    - PNGs:
+        {output_dir}/compare_series_{i}.png      # side-by-side Predicted vs True
+        {output_dir}/inputs_series_{i}.png       # optional input sequence frames
+    - NumPy:
+        {output_dir}/pred_images_all.npy         # (N_series, rows, cols), reconstructed 2D
+
+Reproducibility & Gotchas:
+    - Ensure YAML flags match the checkpoint’s training flags; mismatches in
+      diff/sparse/timeContext/meanCentered/time_steps will cause shape errors
+      or poor predictions.
+    - If meanCentered is True, Xmean and ymean must have shapes compatible with
+      (time_steps, input_dim) and (time_steps, output_dim) respectively.
+    - The first supervised target here is the post-preprocessing “first step”
+      (e.g., if diff=True, that means the first difference frame).
+
+Dependencies:
+    Python 3.9+, NumPy, PyTorch, Matplotlib, PyYAML
 """
+
 
 import os
 import argparse

@@ -1,28 +1,145 @@
 # -*- coding: utf-8 -*-
 """
-Training script for the first-stage LSTM regression model
----------------------------------------------------------
+LSTM training (first-stage regressor) for time-evolving conductivity maps
+========================================================================
 
-This script performs end-to-end training of an LSTM-based regressor for
-temporal evolution of apparent resistivity maps. 
+Overview
+--------
+This script trains an LSTM-based regressor that predicts the *next* flattened
+conductivity map from a short input sequence of past maps. It is a cleaned-up,
+YAML-driven version of the original:
+    07_trainingAppResTemporalDerivativeFirstImage_kfold.py
 
-Main features:
-    - Configuration through a YAML file (see --config argument)
-    - Folder-based input and output management
-    - Optional k-fold cross validation and grid search over learning rates
-      and batch sizes
-    - Optional retraining using the best hyperparameter combination
-    - Automatic saving of model weights, mean values, normalization factors,
-      and training logs
+Typical use case:
+- You have time-lapse apparent resistivity data for multiple sequences/fields.
+- You convert resistivity ρ [Ω·m] to conductivity σ [mS·m⁻¹] via σ = 1000 / ρ.
+- You want to learn short-term temporal dynamics with a compact triangular
+  layout (flattened per row sizes 29, 26, 23, …, 2, 1).
 
-Workflow overview:
-    1. Load configuration (paths, preprocessing, model, and training settings)
-    2. Load measured and true resistivity data (converted to conductivity)
-    3. Apply preprocessing (cropping, differencing, normalization, etc.)
-    4. Create sequence data for LSTM
-    5. Train and evaluate with k-fold CV
-    6. Retrain the model using the best settings and save all outputs
+Key features
+------------
+1) **Config by YAML**: All paths, preprocessing flags, model sizes, and
+   training hyperparameters are read from a YAML file passed via `--config`.
+   Command-line options can override selected YAML fields (LRs, batch sizes,
+   k-folds, epochs, seed, retrain toggle).
 
+2) **Folder I/O**: Inputs are read from folder + filename pairs; all artifacts
+   (normalization stats, mean-centering stats, CV logs, best model, curves)
+   are saved under an output `base_dir` specified in the YAML.
+
+3) **Preprocessing pipeline** (configurable):
+   - **Unit conversion**: loads measured and true ρ as NumPy arrays and
+     converts them to σ = 1000 / ρ. NaNs are replaced by zeros.
+   - **Initial frame prepend**: the true t=0 frame is prepended to the measured
+     stack so the model can “see” the initial state.
+   - **Early crop / sparse sampling**: limit the maximum time or subsample time.
+   - **Temporal differencing**: optional `np.diff` on the time axis.
+   - **Normalization**: per-time-step min–max normalization (input/output
+     separately), saved to NPZ for later reuse.
+   - **Mean centering**: per-time-step mean removal for both X and y; means are
+     saved to NPZ (required to invert centering at inference time).
+
+4) **Sequence building**:
+   - **Input X**: for each series and window of length `T`, we flatten each
+     2D frame with a triangular mask (row sizes = 29, 26, 23, …, 2, 1) into
+     a 1D vector. If `time_context: true`, a normalized time channel
+     (scalar replicated to the same length) is concatenated per frame.
+   - **Target y**: built with the same flattening. For training, only the
+     *first* step of the output window is used (matching the original Keras
+     behavior).
+
+5) **Model**:
+   - A small **unidirectional LSTM** (num_layers, hidden_size configurable)
+     followed by two MLP layers and a linear head that outputs one flattened
+     map (same length as the triangular flattening).
+
+6) **Training/CV & Logging**:
+   - **K-fold cross validation** over the grid of (LR × batch size).
+   - Per-epoch train/validation loss logged to CSV; per-combo per-fold logs
+     also saved. Summary grid CSV consolidates all folds and means.
+   - The best (mean validation) hyperparameters can be **retrained** on an
+     80/20 split; final weights, single-file payload, and loss curves are saved.
+
+7) **Determinism**:
+   - `seed` controls NumPy and PyTorch RNGs (CPU + CUDA).
+   - Note: cuDNN kernels can still introduce slight nondeterminism unless
+     further flags are set; this script opts for speed by default.
+
+Input expectations
+------------------
+- **Measured file**: NumPy array with shape `(N, Tm, H, W)`, where Tm is the
+  measured time length. Values are resistivity ρ [Ω·m]; converted internally
+  to σ [mS·m⁻¹].
+- **United (true) file**: NumPy array with shape `(N, Tu, H, W)` that contains
+  the corresponding true time series (ρ), also converted to σ. The `t=0` frame
+  is used to prepend the measured stack.
+
+After preprocessing and windowing:
+- `X` has shape `(num_windows, T, F)` where `F` is the triangular flattened
+  length (with `+1` if `time_context: true`).
+- `y` has shape `(num_windows, F)` (only the first output step is used).
+
+Saved artifacts
+---------------
+Saved under `outputs.base_dir` (see YAML):
+- `norm_in_npz`, `norm_out_npz`: min/max per time step for inputs/outputs.
+- `mean_values_npz`: arrays `Xmean`, `ymean` for time-step-wise centering.
+- `grid_search_csv`: summary of CV results per (LR, batch).
+- `best_config_txt`: the best LR, batch size, and mean validation score.
+- `best_cv_indices.npz`: indices used in each CV fold.
+- (If `retrain_best: true`) final:
+  - `best_model_pt`: `state_dict` of the best model after 80/20 retraining.
+  - `single_output_lstm_model.pt`: payload with `model_state_dict`,
+    `input_dim`, `output_dim`, and `time_steps`.
+  - `loss_history_best_retrain.csv` and `loss_curve_best_retrain_first.png`.
+
+YAML quick reference
+--------------------
+```yaml
+inputs:
+  measured_dir: path/to/dir
+  measured_file: measured_training_data.npy
+  united_dir: path/to/dir
+  united_file: united_triangular_matrices.npy
+
+preprocess:
+  early: false          # if true, keep only [:early_limit] timesteps
+  early_limit: 50
+  choose_index: []      # optional subset of series indices
+  sparse: false
+  sparse_stride: 10
+  diff: false
+  normalization: false
+  mean_centered: true
+  time_steps: 4         # window length T
+  time_context: false   # add normalized time channel
+
+model:
+  hidden_size: 512
+  num_layers: 2
+
+training:
+  lrs: [0.001, 0.0005, 0.0001]
+  batch_sizes: [4, 8, 16]
+  kfolds: 5
+  epochs: 100
+  seed: 42
+  num_workers: 0
+  retrain_best: true
+
+outputs:
+  base_dir: results_first
+  norm_in_npz: norm_input.npz
+  norm_out_npz: norm_output.npz
+  mean_values_npz: mean_values.npz
+  grid_search_csv: grid_search_results.csv
+  best_config_txt: best_config.txt
+  cv_indices_npz: best_cv_indices.npz
+  retrain_indices_npz: best_retrain_indices.npz
+  best_model_pt: best_model_first.pt
+  single_payload_pt: single_output_lstm_model.pt
+  loss_history_csv: loss_history_best_retrain.csv
+  loss_curve_png: loss_curve_best_retrain_first.png
 """
 
 import os
