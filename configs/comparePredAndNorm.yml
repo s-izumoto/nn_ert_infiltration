@@ -1,0 +1,24 @@
+# === 入力 ===
+# 直接ファイルを指定しても良いし、dir + filename の組み合わせでもOK
+pred_file: null                   # 例: "C:/path/to/conductivity.npy"
+pred_dir: "data/output/whole"
+pred_filename: "conductivity.npy"
+
+measured_file: null               # 例: "D:/data/training_data34_test.npy"
+measured_dir: "data/training"
+measured_filename: "training_data34_test.npy"
+
+# === 出力 ===
+out_dir: "data/output/comparePredAndNorm"
+
+# === 抽出条件 ===
+seq:                              # 出力したいシーケンス（空 or null なら全件）
+start_pred: 1                     # 予測側の開始ステップ（含む）
+max_pred_steps: 31                # 予測側で出力する最大フレーム数（start からの相対）
+meas_step_factor: 10              # measured_t = pred_t * factor - 1
+
+# === プロット ===
+cmap: "hot"
+nan_to_zero: false                # TrueにするとNaN/±infを0に置換して描画
+per_sequence_vrange: true         # シーケンスごとにvmin/vmaxを取り直す
+dpi: 150

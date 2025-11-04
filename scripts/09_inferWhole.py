@@ -18,13 +18,15 @@ def load_yaml(path: Path) -> dict:
 
 
 def safe_inverse_k(arr, scale=1000.0, eps=1e-8, clip=1e6):
-    """安全な 1/x * scale。NaN/Inf をゼロorクリップに置換。float32 で返す。"""
+    """安全な 1/x * scale。無効は NaN のまま、有限のみ計算してクリップ。float32 で返す。"""
     a = np.array(arr, dtype=np.float64, copy=False)
-    out = np.zeros_like(a, dtype=np.float64)
-    np.divide(scale, a, out=out, where=np.abs(a) > eps)
-    out = np.nan_to_num(out, nan=0.0, posinf=clip, neginf=-clip)
-    np.clip(out, -clip, clip, out=out)
+    valid = np.isfinite(a) & (np.abs(a) > eps)
+    out = np.full_like(a, np.nan, dtype=np.float64)
+    out[valid] = scale / a[valid]
+    # 有効要素だけクリップ（NaN はそのまま）
+    out[valid] = np.clip(out[valid], -clip, clip)
     return out.astype(np.float32, copy=False)
+
 
 
 def main():
@@ -102,7 +104,6 @@ def main():
 
     # 真値（値スケール）に変換して、間引き
     true_resistivity_all = safe_inverse_k(united, scale=SCALE, eps=EPS, clip=CLIP)  # (N, T_full, R, C)
-    true_resistivity_all = np.nan_to_num(true_resistivity_all, nan=0.0)
 
     mape_values = []
     conductivity_stack = []  # 各 seq の再構成（値）時系列を積む
@@ -118,15 +119,13 @@ def main():
             diffs_rest = diffs_seq                          # (T, R, C)
 
         # t=0 真の「値」(基準面)
-        initial_true_value = safe_inverse_k(united[seq, 0], scale=SCALE, eps=EPS, clip=CLIP)  # (R, C)
-        initial_true_value = np.nan_to_num(initial_true_value, nan=0.0)[None, ...]  # (1, R, C)
+        initial_true_value = safe_inverse_k(united[seq, 0], scale=SCALE, eps=EPS, clip=CLIP)[None, ...]
 
         # diff を時系列に連結: [t0の値] + [t1のdiff(=initial_diff)] + [t2..のdiff]
         diff_series = np.concatenate([initial_diff, diffs_rest], axis=0)  # (T_use, R, C)
 
         # 値へ再構成（cumsum）
         values_series = np.cumsum(np.concatenate([initial_true_value, diff_series], axis=0), axis=0)
-        values_series = np.nan_to_num(values_series, nan=0.0)  # (T_use+1, R, C)
 
         # --- 真値（間引き）と長さ合わせ ---
         true_seq = true_resistivity_all[seq, 0::NUM_MEASUREMENTS]   # (T_true, R, C)
@@ -142,27 +141,45 @@ def main():
         for t in range(T):
             true_vals = true_seq[t]
             pred_vals = values_series[t]
-            mask = (true_vals != 0.0)
-            rel = np.abs((pred_vals - true_vals) / true_vals)
+            mask = np.isfinite(true_vals) & (true_vals != 0.0)
+            rel = np.zeros_like(true_vals, dtype=np.float32)
+            rel[mask] = np.abs((pred_vals[mask] - true_vals[mask]) / true_vals[mask])
             mape_sum += float(rel[mask].sum())
             valid_count += int(mask.sum())
 
             if VIZ_ENABLED and (seq in CHOSEN_SEQUENCES):
+                cmap_val = plt.get_cmap(CMAP_VALUE).copy()
+                cmap_val.set_bad('white')        # NaN は白
+                cmap_diff = plt.get_cmap(CMAP_DIFF).copy()
+                cmap_diff.set_bad('white')
+
+                pred_show = np.ma.masked_invalid(pred_vals)
+                true_show = np.ma.masked_invalid(true_vals)
+
+                vmin = min(pred_show.min(), true_show.min())
+                vmax = max(pred_show.max(), true_show.max())
+
                 diff_map = np.abs(pred_vals - true_vals)
+                invalid = ~np.isfinite(pred_vals) | ~np.isfinite(true_vals)
+                diff_map = diff_map.astype(np.float32, copy=False)
+                diff_map[invalid] = np.nan
+                diff_show = np.ma.masked_invalid(diff_map)
+
                 fig = plt.figure(figsize=(18, 6))
+                fig.patch.set_facecolor('white')   # 背景も白で統一
 
                 ax1 = plt.subplot(1, 3, 1)
-                im1 = ax1.imshow(pred_vals, aspect='auto', cmap=CMAP_VALUE)
+                im1 = ax1.imshow(pred_show, aspect='auto', cmap=cmap_val, vmin=vmin, vmax=vmax)
                 plt.colorbar(im1, ax=ax1, label="Predicted value")
                 ax1.set_title(f"Pred t={t} (Seq {seq})")
 
                 ax2 = plt.subplot(1, 3, 2)
-                im2 = ax2.imshow(true_vals, aspect='auto', cmap=CMAP_VALUE)
+                im2 = ax2.imshow(true_show, aspect='auto', cmap=cmap_val, vmin=vmin, vmax=vmax)
                 plt.colorbar(im2, ax=ax2, label="True value")
                 ax2.set_title(f"True t={t} (Seq {seq})")
 
                 ax3 = plt.subplot(1, 3, 3)
-                im3 = ax3.imshow(diff_map, aspect='auto', cmap=CMAP_DIFF)
+                im3 = ax3.imshow(diff_show, aspect='auto', cmap=cmap_diff)
                 plt.colorbar(im3, ax=ax3, label="|Pred-True|")
                 ax3.set_title(f"Diff t={t} (Seq {seq})")
 

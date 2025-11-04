@@ -38,9 +38,13 @@
    python scripts/07_trainingFirst.py --config configs/trainingFirst.yml
    ```
 
-8. **Train NN for predicting first data**  
+8. **Infer first data from test data**  
    ```bash
-   python scripts/07_trainingFirst.py --config configs/trainingFirst.yml
+   python scripts/08_inferFirst.py --config configs/inferFirst.yml
    ```
-
+   
+9. **Infer whole data from test data**  
+   ```bash
+   python scripts/09_inferWhole.py --config configs/inferWhole.yml
+   ```
 ---
