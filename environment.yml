@@ -147,4 +147,3 @@ dependencies:
   - widgetsnbextension==4.0.15
   - wslink==2.5.0
   - yarl==1.22.0
-prefix: C:\Users\izumoto\github\nn_ert_infiltration\.conda

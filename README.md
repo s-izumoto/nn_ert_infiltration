@@ -1,6 +1,6 @@
 # ERT — Water Infiltration into Soil + Neural Completion
 
-> Reconstruct high‑resolution, time‑lapse apparent resistivity fields during **water infiltration into soil** by combining physics‑based simulation (OpenFOAM → pyGIMLi ERT) with sequence models (LSTM/Seq2Seq).
+> Reconstruct high‑resolution, time‑lapse apparent resistivity fields during **water infiltration into soil** by combining physics‑based simulation (OpenFOAM → pyGIMLi ERT) with sequence models (LSTM/Seq2Seq). Neural networks increase effective temporal/spatial resolution by approximately **×15** compared with the original ERT sampling.
 
 ---
 
@@ -41,27 +41,31 @@
 - **Spacing:** 4 cm
 - **Pattern:** Wenner‑alpha (same as used in this code)
 - **Infiltration:** Central 30 cm of the soil surface continuously saturated with **0.0885 mol/L NaCl** solution
-- **Neural enhancement:** Neural networks increase effective temporal/spatial resolution by approximately **×15** compared with the original ERT sampling
 
 ---
 
-## Installation
-> Notebooks and large data are excluded. Provide your OpenFOAM-derived conductivity maps under `data/`.
+## 🛠️ Installation
 
+### 1️⃣ Create the Conda environment
 ```bash
-conda create -n ert-nn python=3.10 -y
-conda activate ert-nn
-pip install numpy scipy matplotlib pyyaml tqdm pillow
-pip install torch --index-url https://download.pytorch.org/whl/cpu   # or CUDA wheel if available
-pip install pygimli
-```
-
-To export or share the environment:
-```bash
-conda env export --no-builds > environment.yml
-# recreate later
+# (Recommended) Use Mambaforge or Miniconda with conda-forge channel enabled
+mamba env create -f environment.yml
+# OR
 conda env create -f environment.yml
 ```
+
+### 2️⃣ Activate the environment
+```bash
+# The environment name is defined in environment.yml (e.g., nn-ert-infiltration)
+conda activate nn-ert-infiltration
+```
+
+### 3️⃣ Verify installation
+```bash
+python -c "import torch, pygimli, numpy; print('Torch:', torch.__version__); print('PyGIMLi:', pygimli.__version__)"
+```
+
+If versions appear without error, installation is complete.
 
 ---
 

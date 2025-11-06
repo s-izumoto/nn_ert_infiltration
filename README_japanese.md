@@ -1,6 +1,6 @@
 # ERT — 土壌への水浸透 + ニューラル補完
 
-> OpenFOAM による物理ベースのシミュレーションと LSTM/Seq2Seq モデルを組み合わせ、**土壌への水浸透中の見かけ比抵抗場**を高解像度・時系列的に再構成します。
+> OpenFOAM による物理ベースのシミュレーションと LSTM/Seq2Seq モデルを組み合わせ、**土壌への水浸透中の見かけ比抵抗場**を高解像度・時系列的に再構成します。元の ERT サンプリングに比べ**時間／空間分解能が約15倍向上**することを期待できます。
 
 ---
 
@@ -41,27 +41,31 @@
 - **電極間隔:** 4 cm  
 - **測定パターン:** Wenner-alpha（本コード内で使用されるものと同一）  
 - **浸潤条件:** 土壌表面中央 30 cm を **0.0885 mol/L NaCl** 溶液で常時飽和状態に維持  
-- **ニューラル強化:** ニューラルネットワークにより、元の ERT サンプリングに比べ**時間／空間分解能が約15倍向上**
 
 ---
 
 ## インストール方法
-> Notebook と大容量データは含まれていません。OpenFOAM から得られた導電率マップを `data/` に配置してください。
 
+### 1️⃣ Conda 環境を作成
 ```bash
-conda create -n ert-nn python=3.10 -y
-conda activate ert-nn
-pip install numpy scipy matplotlib pyyaml tqdm pillow
-pip install torch --index-url https://download.pytorch.org/whl/cpu   # GPUがある場合はCUDA版を使用
-pip install pygimli
-```
-
-環境をエクスポートまたは共有する場合:
-```bash
-conda env export --no-builds > environment.yml
-# 復元する場合
+# conda-forge チャンネルを有効にした Mambaforge / Miniconda の使用を推奨
+mamba env create -f environment.yml
+# または
 conda env create -f environment.yml
 ```
+
+### 2️⃣ 環境を有効化
+```bash
+# environment.yml に定義された環境名（例：nn-ert-infiltration）を使用
+conda activate nn-ert-infiltration
+```
+
+### 3️⃣ インストール確認
+```bash
+python -c "import torch, pygimli, numpy; print('Torch:', torch.__version__); print('PyGIMLi:', pygimli.__version__)"
+```
+
+バージョンが表示されれば設定は完了です。
 
 ---
 
