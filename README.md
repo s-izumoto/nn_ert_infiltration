@@ -1,6 +1,6 @@
 # ERT — Water Infiltration into Soil + Neural Completion
 
-> Reconstruct high‑resolution, time‑lapse apparent resistivity fields during **water infiltration into soil** by combining physics‑based simulation (OpenFOAM → pyGIMLi ERT) with sequence models (LSTM/Seq2Seq). Neural networks increase effective temporal/spatial resolution by approximately **×15** compared with the original ERT sampling.
+> Reconstruct high‑resolution, time‑lapse apparent resistivity fields during **water infiltration into soil** by combining physics‑based simulation (OpenFOAM → pyGIMLi ERT) with sequence models (LSTM/Seq2Seq). Neural networks increase effective temporal/spatial resolution by approximately **×15** compared with the original ERT sampling. See example results in the `movie/` folder.
 
 ---
 
