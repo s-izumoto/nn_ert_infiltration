@@ -107,7 +107,7 @@ If the versions are displayed correctly, the setup is complete.
 
 ---
 
-## ⚙️ Example Execution
+## ⚙️ Overall Pipeline (Execution Examples)
 
 ### **01_generateAppRes.py — Generate Triangular Matrices by Forward Modeling**
 For each time step of OpenFOAM output, pyGIMLi performs forward modeling using the Wenner–alpha array to compute the apparent resistivity maps, which are exported as triangular matrices.
@@ -209,7 +209,7 @@ python 10_comparePredAndNorm.py --config configs/10_compare.yml
 
 ---
 
-## 📦 I/O Flow (Quick Summary)
+## 📦 I/O Flow
 
 1. **OpenFOAM → pyGIMLi (Step 01)**  
    `combined_conductivity_maps.npy` → `triangular_matrix_seq_*.npy`
@@ -234,7 +234,7 @@ python 10_comparePredAndNorm.py --config configs/10_compare.yml
 
 ---
 
-## **Pipeline Overview (Outputs Generated at Each Step)**
+## **Detailed Description of Each Script**
 Below is an explanation of the purpose and main outputs for each script.
 
 ---

@@ -104,7 +104,7 @@ python -c "import torch, pygimli, numpy; print('Torch:', torch.__version__); pri
 
 ---
 
-## ⚙️ 実行例
+## ⚙️ 一連のパイプライン（実行例）
 
 ### **01_generateAppRes.py — 順解析による三角行列生成**
 OpenFOAM出力の各時系列に対し、pyGIMLiでWenner–alpha配列を用いて見かけ比抵抗マップを算出し、三角行列として出力します。  
@@ -206,7 +206,7 @@ python 10_comparePredAndNorm.py --config configs/10_compare.yml
 
 ---
 
-## 📦 I/O の流れ（クイックまとめ）
+## 📦 I/O の流れ
 
 1. **OpenFOAM → pyGIMLi（01）**  
 　`combined_conductivity_maps.npy` → `triangular_matrix_seq_*.npy`
@@ -231,7 +231,7 @@ python 10_comparePredAndNorm.py --config configs/10_compare.yml
 
 ---
 
-## 一連のパイプライン（各ステップが**生成するもの**）
+## 各スクリプトの詳細説明
 以下は、各スクリプトの目的と主な出力の説明です。
 
 ### **01_generateAppRes.py — 順解析による三角行列生成**  
