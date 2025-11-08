@@ -65,31 +65,39 @@ For t = 1..T-1:
   probability_map = diff / diff.sum()          # if save_probability
   save visualization frame (optional)
 
-CONFIG KEYS (YAML, take precedence)
------------------------------------
+# ===========================
+# YAML Configuration Guide — 03_generateMeasDesign.py
+# ===========================
+# Each key defines the input type and its purpose for generating
+# "measured" time series by greedily updating pixels with the largest
+# true–measured mismatch at each time step.
+
 # === Input ===
-input_file: "path/or/dir/of/npys"
-nan_fill_value: 0.0
-time_stride: 1
+# input_file (str): Path to a single 4-D .npy OR a directory of .npy files (seq, time, H, W).
+# nan_fill_value (float): Value used to replace NaNs before processing.
+# time_stride (int): Temporal subsampling stride (use 1 for every time step).
 
 # === Measurement policy ===
-num_measurements: 1          # K (top-K per time step)
-save_probability: false
+# num_measurements (int): K — number of top-difference pixels updated per time step.
+# save_probability (bool): If true, save L1-normalized difference maps as probability maps.
 
 # === Visualization ===
-save_frames: true
-frame_output_dir: "frames_training_data"
-frame_seq_index: 5           # which sequence to visualize
-cmap: "hot"
+# save_frames (bool): If true, save side-by-side PNGs (Measured vs True) for one sequence.
+# frame_output_dir (str): Output folder for visualization frames (created per input stem).
+# frame_seq_index (int): Sequence index to visualize (0-based).
+# cmap (str): Matplotlib colormap name for saved frames (e.g., "hot").
 
 # === Outputs ===
-measured_output: "measured_training_data.npy"   # file or directory
-indices_output:  "measurement_indices.npy"      # file or directory
+# measured_output (str): File or directory for measured maps (shape: N_seq × (T-1) × H × W).
+# indices_output  (str): File or directory for (col,row) measurement indices per step.
+#   # Note: If a path ends with ".npy", write exactly there; if it is a directory,
+#   # files will be named "<default>__<input_stem>.npy" to avoid collisions.
+#   # Probability maps use an auto path ("y_probabilities.npy") when save_probability=true.
 
-# === Progress ===
-progress: "bar"      # "bar" | "print" | "none"
-progress_leave: false
-progress_seq_every: 5
+# === Progress display ===
+# progress (str): "bar" | "print" | "none" — choose progress reporting mode.
+# progress_leave (bool): Keep progress bars after completion (when using "bar").
+# progress_seq_every (int): Print interval (in sequences) when progress="print".
 
 OUTPUT PATH RULES
 -----------------
@@ -100,7 +108,7 @@ OUTPUT PATH RULES
 
 USAGE
 -----
-    python 03_generateMeasDesign.py --config configs/generate_meas_design.yml
+    python 03_generateMeasDesign.py --config configs/generateMeasDesign.yml
 
 NOTES
 -----

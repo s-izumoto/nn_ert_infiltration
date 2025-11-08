@@ -49,46 +49,53 @@ Expected data shapes & triangular layout
   concatenated row by row. `create_array` produces a 1D feature vector
   F = sum(row_sizes). `de_create_array` reverses this for visualization.
 
-Key inputs (YAML)
------------------
-The script is driven by a YAML file (pass with `--config path/to/config.yml`).
-Top-level sections and fields:
+# ===========================
+# YAML Configuration Guide — 05_trainingSequence.py
+# ===========================
+# Keys for training a 2-layer LSTM encoder–decoder (seq2seq) on triangular maps.
+# Paste this block at the top of trainingSequence.yml (no example config below).
 
-paths:
-  measured:     str  # file or folder for measured stacks
-  united:       str  # file or folder for true stacks
-  results_dir:  str  # output directory
+# --- paths ---
+# paths.measured (str): File or folder of measured stacks (.npy/.npz; shape N×T×H×W or T×H×W).
+# paths.united   (str): File or folder of true stacks (.npy/.npz; same ordering/shapes as measured).
+# paths.results_dir (str): Output directory for logs, models, and artifacts.
 
-preprocess:
-  early:         bool  # if True, crop to the early portion of the time series
-  chooseIndex:   bool  # if True, select only the indices in `choose_indices`
-  sparce:        bool  # if True, subsample along time (here, ::10)
-  diff:          bool  # if True, use temporal differences (np.diff) for X and y
-  timeContext:   bool  # if True, append a time channel in [0,1] to encoder inputs
-  normalization: bool  # if True, per-time-step min–max over (N, H, W)
-  meanCentered:  bool  # if True, subtract per-time-step means and save them
+# --- preprocess ---
+# preprocess.early (bool): Use only the early portion of each time series.
+# preprocess.chooseIndex (bool): Keep only samples listed in choose_indices.
+# preprocess.sparce (bool): Subsample time steps (e.g., use ::10 internally).
+# preprocess.diff (bool): Replace series with time differences (applied to X and y).
+# preprocess.timeContext (bool): Append a normalized time channel [0,1] to encoder inputs.
+# preprocess.normalization (bool): Per-time-step min–max over (N,H,W) for inputs/targets.
+# preprocess.meanCentered (bool): Subtract per-time-step means and save them.
 
-choose_indices:
-  - int, int, ...      # sample indices to keep (effective when chooseIndex=True)
+# --- choose_indices ---
+# choose_indices ([]int): Sample indices to keep (effective when chooseIndex=true).
 
-sequence:
-  time_steps:          int  # encoder window length (default 30)
-  output_seq_length:   int  # decoder output length (default 29)
+# --- sequence ---
+# sequence.time_steps (int): Encoder window length (default 30).
+# sequence.output_seq_length (int): Decoder output length (default 29).
 
-model:
-  enc_hidden:          int  # (currently not used; encoder hidden is 512)
-  dec_hidden:          int  # (currently not used; decoder hidden is 512)
+# --- model ---
+# model.enc_hidden (int): Encoder hidden size (reserved; current implementation uses 512).
+# model.dec_hidden (int): Decoder hidden size (reserved; current implementation uses 512).
 
-train:
-  lrs:           [float, ...]  # learning rates for grid search
-  batch_sizes:   [int,   ...]  # batch sizes for grid search
-  kfolds:        int           # K-fold split for CV
-  epochs:        int           # epochs per fold
-  seed:          int           # global RNG seed for reproducibility
-  retrain_best:  bool          # retrain best config on an 80/20 split
+# --- train ---
+# train.lrs ([float]): Learning rates to grid-search.
+# train.batch_sizes ([int]): Batch sizes to grid-search.
+# train.kfolds (int): Number of CV folds.
+# train.epochs (int): Epochs per fold.
+# train.seed (int): RNG seed for reproducibility.
+# train.retrain_best (bool): Retrain best (lr, batch) on an 80/20 split and save artifacts.
 
-artifacts:
-  save_loss_curve_png: bool    # save PNG of the retrain loss curve (if Pillow)
+# --- artifacts ---
+# artifacts.save_loss_curve_png (bool): Save retrain loss curve as PNG (if Pillow is available).
+
+# --- notes ---
+# • Inputs are converted to conductivity (σ = 1000 / ρ) and NaN/Inf are sanitized.
+# • The triangular (H,W) maps are flattened to a 1D feature via row sizes [29,26,23,...,2].
+# • Folder inputs: file counts and sort order must match between measured and united.
+
 
 Outputs (artifacts written to `results_dir`)
 --------------------------------------------
@@ -117,7 +124,7 @@ Device & performance
 How to run
 ----------
 Example:
-    python 05_trainingSequence.py --config configs/seq_train.yml
+    python 05_trainingSequence.py --config configs/trainingSequence.yml
 
 Common pitfalls
 ---------------

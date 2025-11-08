@@ -76,33 +76,46 @@ Expected array shapes
     initial_all:      (N, R, C)
     united (truth):   (N, T_true_full, R, C)
     reconstructed:    (N, Tmin, R, C)
+    
+# ===========================
+# YAML Configuration Guide — 09_inferWhole.py
+# ===========================
+# Keys for reconstructing full time-series maps from:
+#   (a) an "initial" diff at t=1 and
+#   (b) a seq2seq tensor of subsequent per-timestep differences (Δ).
+# The script cumulatively sums from true t=0 to produce absolute maps,
+# then scores MAPE and optionally saves comparison images.
+# Paste at the top of inferWhole.yml.
 
-Key YAML fields (minimal)
-    run:
-      verbose: true
-    inputs:
-      seq2seq_dir: <path>
-      seq2seq_file: outputs_pred_all_series.npy
-      initial_dir: <path>
-      initial_file: pred_images_all.npy
-      true_dir: <path>
-      true_file: united_triangular_matrices_test.npy
-    processing:
-      num_measurements: 10          # stride for truth sub-sampling
-      scale: 1000.0                 # used in safe 1/x
-      eps: 1e-8                     # numerical guard for inversion
-      clip: 1e6                     # clamp extreme 1/x
-      drop_duplicate_first_diff: true
-    viz:
-      enabled: true
-      chosen_sequences: [0,1,2,3,4,5]
-      cmap_value: "hot"
-      cmap_diff: "coolwarm"
-    output:
-      dir: "compareWithTestData"
-      mape_txt: "mape_values.txt"
-      stack_file: "conductivity.npy"
-      image_prefix: "measurement_locations_seq"
+# --- run ---
+# run.verbose (bool): Print file paths, per-sequence MAPE, and save locations.
+
+# --- inputs ---
+# inputs.seq2seq_dir (str): Folder containing predicted Δ series (.npy).
+# inputs.seq2seq_file (str): Filename of Δ tensor with shape (N, T_pred, R, C).
+# inputs.initial_dir (str): Folder containing the "initial" diff at t=1 (.npy).
+# inputs.initial_file (str): Filename of initial diff with shape (N, R, C).
+# inputs.true_dir (str): Folder containing ground-truth time stacks (.npy).
+# inputs.true_file (str): Filename of truth with shape (N, T_true_full, R, C).
+
+# --- processing ---
+# processing.num_measurements (int): Temporal stride for sub-sampling truth (e.g., 10 keeps t=0,10,20,…).
+# processing.scale (float): Scale used in safe inverse transform (value → scale/value).
+# processing.eps (float): Numerical guard; values with |x| ≤ eps are not inverted.
+# processing.clip (float): Absolute clamp for inverted values to avoid extreme magnitudes.
+# processing.drop_duplicate_first_diff (bool): If first Δ in seq2seq duplicates the initial diff, drop it.
+
+# --- viz ---
+# viz.enabled (bool): Save PNGs comparing Pred/True/|Pred−True| for selected sequences.
+# viz.chosen_sequences (list[int]): Sequence indices to render (e.g., [0,1,2,3,4,5]).
+# viz.cmap_value (str): Colormap for Pred/True (default "hot"); NaNs shown as white.
+# viz.cmap_diff (str): Colormap for |Pred−True| (default "coolwarm"); NaNs shown as white.
+
+# --- output ---
+# output.dir (str): Destination folder for results (created if missing).
+# output.mape_txt (str): Text file name for per-sequence MAPE (e.g., "mape_values.txt").
+# output.stack_file (str): Numpy file name for reconstructed stack (e.g., "conductivity.npy").
+# output.image_prefix (str): Prefix for saved PNGs (e.g., "measurement_locations_seq").
 
 CLI
     python 09_inferWhole.py --config path/to/config.yml

@@ -34,18 +34,24 @@ Key Behaviors / Assumptions
   taken from the first picked training file; otherwise a clear error is raised.
 - **Lightweight I/O:** Only the selected files are loaded into memory (once each), then stacked and saved.
 
-YAML Configuration Keys (with defaults)
----------------------------------------
-- `input_folder`      (str, default `"visualizations_large"`): Where to search for `.npy` files.
-- `filename_pattern`  (str, default `"triangular_matrix_seq_*.npy"`): Glob pattern for files.
-- `train_out`         (str, default `"united_triangular_matrices.npy"`): Output path for train stack.
-- `test_out`          (str, default `"united_triangular_matrices_test.npy"`): Output path for test stack.
-- `train_count`       (int, default `45`): Number of files to include in the training set.
-- `test_count`        (int, default `5`): Number of files to include in the test set.
-- `seed`              (int|null, default `42`): Random seed; `null` → non-reproducible random split.
-- `strict_shape`      (bool, default `true`): Enforce identical `(T, H, W)` across all selected files.
-- `save_filelists`    (bool, default `true`): Whether to save train/test filename lists.
-- `filelists_prefix`  (str, default `"united"`): Prefix for the filename-list text files.
+# ===========================
+# YAML Configuration Guide — 02_uniteTriangular.py
+# ===========================
+# Each key defines the input type and its purpose for uniting multiple
+# triangular-matrix sequences into train/test stacks.
+
+# Top-level keys
+# ---------------
+# input_folder (str): Folder to search for per-sequence .npy files.
+# filename_pattern (str): Glob pattern for input files (e.g., triangular_matrix_seq_*.npy).
+# train_out (str): Output path for the TRAIN stack (.npy, shape = N_train × T × H × W).
+# test_out (str): Output path for the TEST stack (.npy, shape = N_test × T × H × W).
+# train_count (int): Number of files to include in the training set.
+# test_count (int): Number of files to include in the test set.
+# seed (int | null): Random seed for reproducible splitting (null = non-reproducible).
+# strict_shape (bool): Enforce identical (T,H,W) across all selected files.
+# save_filelists (bool): Also save text files listing the chosen train/test filenames.
+# filelists_prefix (str): Prefix path for the filename lists (e.g., outputs/united).
 
 Input / Output
 --------------
@@ -59,11 +65,11 @@ Input / Output
 
 CLI Usage
 ---------
-    python 02_uniteTriangular.py -c path/to/config.yml
+    python 02_uniteTriangular.py --config uniteTriangular.yml
 
 Example YAML
 ------------
-    input_folder: "visualizations_large"
+    input_folder: "data/simulationAppRes"
     filename_pattern: "triangular_matrix_seq_*.npy"
     train_out: "data/united/united_triangular_matrices.npy"
     test_out: "data/united/united_triangular_matrices_test.npy"
@@ -107,7 +113,7 @@ def load_cfg(yaml_path: Path) -> dict:
         cfg = yaml.safe_load(f) or {}
 
     # Default values (used if not specified in YAML)
-    cfg.setdefault("input_folder", "visualizations_large")
+    cfg.setdefault("input_folder", "data/simulationAppRes")
     cfg.setdefault("filename_pattern", "triangular_matrix_seq_*.npy")
     cfg.setdefault("train_out", "united_triangular_matrices.npy")
     cfg.setdefault("test_out", "united_triangular_matrices_test.npy")

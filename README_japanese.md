@@ -111,7 +111,7 @@ OpenFOAM出力の各時系列に対し、pyGIMLiでWenner–alpha配列を用い
 
 **実行例:**
 ```bash
-python 01_generateAppRes.py --config configs/01_generate.yml
+python 01_generateAppRes.py --config configs/generateAppRes.yml
 ```
 
 ---
@@ -121,7 +121,7 @@ python 01_generateAppRes.py --config configs/01_generate.yml
 
 **実行例:**
 ```bash
-python 02_uniteTriangular.py --config configs/02_unite.yml
+python 02_uniteTriangular.py --config configs/uniteTriangular.yml
 ```
 
 ---
@@ -131,7 +131,7 @@ python 02_uniteTriangular.py --config configs/02_unite.yml
 
 **実行例:**
 ```bash
-python 03_generateMeasDesign.py --config configs/03_meas_design.yml
+python 03_generateMeasDesign.py --config configs/generateMeasDesign.yml
 ```
 
 ---
@@ -141,7 +141,7 @@ python 03_generateMeasDesign.py --config configs/03_meas_design.yml
 
 **実行例:**
 ```bash
-python 04_generateTrainingData.py --config configs/04_generate_training.yml
+python 04_generateTrainingData.py --config configs/generateTrainingData.yml
 ```
 
 ---
@@ -151,7 +151,7 @@ python 04_generateTrainingData.py --config configs/04_generate_training.yml
 
 **実行例:**
 ```bash
-python 05_trainingSequence.py --config configs/05_seq_train.yml
+python 05_trainingSequence.py --config configs/trainingSequence.yml
 ```
 
 ---
@@ -161,7 +161,7 @@ python 05_trainingSequence.py --config configs/05_seq_train.yml
 
 **実行例:**
 ```bash
-python 06_inferSequence.py --config configs/06_seq_infer.yml
+python 06_inferSequence.py --config configs/inferSequence.yml
 ```
 
 ---
@@ -171,7 +171,7 @@ python 06_inferSequence.py --config configs/06_seq_infer.yml
 
 **実行例:**
 ```bash
-python 07_trainingFirst.py --config configs/07_first_train.yml
+python 07_trainingFirst.py --config configs/trainingFirst.yml
 ```
 
 ---
@@ -181,7 +181,7 @@ python 07_trainingFirst.py --config configs/07_first_train.yml
 
 **実行例:**
 ```bash
-python 08_inferFirst.py --config configs/08_first_infer.yml
+python 08_inferFirst.py --config configs/inferFirst.yml
 ```
 
 ---
@@ -191,7 +191,7 @@ python 08_inferFirst.py --config configs/08_first_infer.yml
 
 **実行例:**
 ```bash
-python 09_inferWhole.py --config configs/09_infer_whole.yml
+python 09_inferWhole.py --config configs/inferWhole.yml
 ```
 
 ---
@@ -201,7 +201,7 @@ python 09_inferWhole.py --config configs/09_infer_whole.yml
 
 **実行例:**
 ```bash
-python 10_comparePredAndNorm.py --config configs/10_compare.yml
+python 10_comparePredAndNorm.py --config configs/comparePredAndNorm.yml
 ```
 
 ---
@@ -232,7 +232,7 @@ python 10_comparePredAndNorm.py --config configs/10_compare.yml
 ---
 
 ## 各スクリプトの詳細説明
-以下は、各スクリプトの目的と主な出力の説明です。
+このセクションでは、各スクリプトの目的と主な入出力をまとめています。ファイル名やパスは YAML の設定に従います。
 
 ### **01_generateAppRes.py — 順解析による三角行列生成**  
 **目的:**  
@@ -247,7 +247,6 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 **入出力:**  
 - **入力:** 
   - OpenFOAM由来の導電率フィールド（NumPy, shape = N×T×H×W）  
-  - YAML 設定ファイル  
 - **出力:** 
   - 三角行列見かけ比抵抗スタック（真値マップ, `.npy`）  
 
@@ -257,7 +256,7 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 形状を確認したうえで**学習用／テスト用データセット**に分割・統合します。  
 
 **処理概要:**  
-1. 指定フォルダ内の `.npy` ファイルを探索（例：`visualizations_large/triangular_matrix_seq_*.npy`）  
+1. 指定フォルダ内の `.npy` ファイルを探索（例：`data/simulationAppRes/triangular_matrix_seq_*.npy`）  
 2. YAML設定に基づいて**ランダムにtrain/testへ分割**（再現性あり）  
 3. 各ファイルを読み込み `(T, H, W)` の形でスタック  
 4. `(N_train, T, H, W)` および `(N_test, T, H, W)` 形式で保存  
@@ -265,11 +264,10 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:** 
-  - 各シーケンスの三角行列見かけ比抵抗ファイル（`.npy`, shape = T×H×W）  
-  - YAML 設定ファイル  
+  - 各シーケンスの三角行列見かけ比抵抗ファイル（`triangular_matrix_seq_*.npy`, shape = T×H×W）  
 - **出力:**  
-  - 統合済み学習データ：`(N_train, T, H, W)`  
-  - 統合済みテストデータ：`(N_test, T, H, W)`  
+  - 統合済み学習データ (`united_triangular_matrices.npy`, shape = (N_train, T, H, W))
+  - 統合済みテストデータ (`united_triangular_matrices_test.npy`, shape = (N_test, T, H, W))
   - （任意）分割に用いたファイル名リスト（`.txt`）  
 
 
@@ -290,8 +288,7 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:** 
-  - 真値比抵抗マップ（`.npy`, shape = N_seq×N_time×H×W）
-  - YAML 設定ファイル  
+  - 真値比抵抗マップ（`united_triangular_matrices.npy`, shape = N_seq×N_time×H×W）
 - **出力:**  
   - 測定マップ時系列：`measured_training_data.npy`（shape = N_seq×(N_time−1)×H×W）  
   - 測定位置インデックス：`measurement_indices.npy`（shape = N_seq×(N_time−1)×K×2）  
@@ -320,13 +317,13 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:**  
-  - 真値比抵抗マップ：`united_triangular_matrices.npy`（shape = N×T×H×W）  
-  - 測定位置シーケンス：`positions_all.npy`（shape = S×T×2, 各要素 [col, row]）
-  - YAML 設定ファイル  
+  - 真値比抵抗マップ：`united_triangular_matrices.npy`（shape = N×T×H×W）
+  - （任意）テスト用真値比抵抗マップ：`united_triangular_matrices_test.npy`（shape = N×T×H×W）
+  - 測定位置の時系列：`measurement_indices.npy`（shape = S×T×2, 各要素 [col, row]）
 
 - **出力:**  
-  - 測定マップ：`measured_training_data_sameRowColSeq{index}.npy`（shape = N×(T−1)×H×W）  
-  - （任意）テスト用測定マップ：`measured_training_data_sameRowColSeq{index}_test.npy`  
+  - 測定マップ：`training_data{index}.npy`（shape = N×(T−1)×H×W）  
+  - （任意）テスト用測定マップ：`training_data{index}_test.npy`  
   - 選択されたシーケンス番号：`chosen_seq_index.npy`  
 
 **特徴:**  
@@ -347,10 +344,9 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 2. **前処理の適用**（YAML 指定）：時間切り出し、間引き、差分化、正規化、平均センタリング、時間コンテキスト付与など  
 3. **エンコーダ用の履歴長 `time_steps` とデコーダ出力長 `output_seq_length`** に基づき、  
    各時系列データから **30 ステップ分の過去データを入力として切り出し、直後の 29 ステップを予測する学習サンプルを作成**。  
-   デフォルト設定（添付の `trainingSequence.yml`）では、  
+   デフォルト設定（`trainingSequence.yml`）では、  
    この 1 セットのみを使用して **「30 ステップの履歴から、次の 29 ステップの真値の変化（Δ）を予測する」** 学習を行います。  
-   - 画像は **Wenner 配列由来の三角形グリッド** であるため、`row_sizes = [29, 26, 23, …, 2]` に従って  
-     各マップを **1 次元ベクトル** に変換（`create_array` 関数）  
+   - 画像は **Wenner 配列由来の三角形グリッド** であるため、`row_sizes = [29, 26, 23, …, 2]` に従って各マップを **1 次元ベクトル** に変換（`create_array` 関数）  
    - 可視化や評価時には、`de_create_array` で元の三角行列に復元  
 4. **学習と評価**  
    - 学習率やバッチサイズの組み合わせを変えてモデルを複数回学習し、  
@@ -359,9 +355,8 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:**  
-  - 測定マップ（measured）：`(N, T, H, W)`  
-  - 真値マップ（united）：`(N, T, H, W)`  
-  - YAML 設定ファイル（前処理／モデル／学習条件）  
+  - 測定マップ（measured）(`training_data{index}.npy`, shape = (N, T, H, W))  
+  - 真値マップ（united）(`united_triangular_matrices.npy`, shape = (N, T, H, W))  
   - ※ フォルダ指定時は **measured と united のファイル数と順序が一致**している必要あり  
 - **出力（`results_dir` に保存）:**  
   - グリッドサーチ結果：`grid_search_results.csv`、`best_config.txt`、fold 別 CSV、`best_cv_indices.npz`  
@@ -395,11 +390,10 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:**  
-  - **測定マップ（measured）:** `04_generateTrainingData.py` で作成されたファイルまたはフォルダ（例：`measured_training_data_sameRowColSeq31.npy`）  
+  - **測定マップ（measured）:** `04_generateTrainingData.py` で作成されたファイルまたはフォルダ（例：`training_data{index}.npy`）  
   - **真値マップ（united）:** `02_uniteTriangular.py` で作成された統合真値ファイル（例：`united_triangular_matrices.npy`）  
   - **学習済みモデル:** `05_trainingSequence.py` の出力（例：`best_model.pt` または `checkpoints/` ディレクトリ）  
   - **正規化ファイル（任意）:** 学習時に保存された `normalization_factors_*.npz` や `mean_values.npz`  
-  - **設定ファイル:** YAML 形式（例：`configs/infer_sequence.yml`）  
 
 - **出力:**  
   - 予測 Δ マップ：`<measured_stem>__pred_seq.npy`（形状：N_series×T_pred×H×W）  
@@ -432,9 +426,8 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:**  
-  - 測定マップ（measured）：`measured_training_data.npy`（`04_generateTrainingData.py` 出力）  
+  - 測定マップ（measured）：`training_data{seq}.npy.npy`（`04_generateTrainingData.py` 出力）  
   - 真値マップ（united）：`united_triangular_matrices.npy`（`02_uniteTriangular.py` 出力）  
-  - YAML 設定ファイル：`configs/training_first.yml`  
 - **出力:**  
   - 学習済みモデル：`best_model_first.pt`、`single_output_lstm_model.pt`  
   - 正規化・平均データ：`norm_input.npz`、`norm_output.npz`、`mean_values.npz`  
@@ -462,11 +455,10 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 
 **入出力:**  
 - **入力:**  
-  - 測定マップ（measured）：`measured_training_data*.npy`（`04_generateTrainingData.py` の出力）  
+  - 測定マップ（measured）：`training_data{seq}.npy`（`04_generateTrainingData.py` の出力）  
   - 真値マップ（united）：`united_triangular_matrices.npy`（`02_uniteTriangular.py` の出力）  
   - 学習済みモデル：`best_model_first.pt` または `single_output_lstm_model.pt`（`07_trainingFirst.py` の出力）  
   - （任意）正規化・平均ファイル：`normalization_factors_*.npz`、`mean_values_*.npz`（学習時に保存したもの）  
-  - 設定ファイル：`configs/infer_first.yml`（YAML）  
 
 - **出力:**  
   - 予測 t=1 マップ（スタック）：`pred_images_all.npy`（各系列の 2D 三角行列を格納）  
@@ -504,7 +496,7 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 - **出力:**  
   - **再構成スタック（絶対値）**：`conductivity.npy`（形状：N×T×H×W）※T は整合後の最短長  
   - **評価サマリ**：`mape_values.txt`（系列ごとの MAPE[%] を列挙）  
-  - **比較画像（任意）**：`compareWithTestData/measurement_locations_seq{idx}_timestep_{t}.png`  
+  - **比較画像（任意）**：`measurement_locations_seq_{seq}_timestep_{time}.png`  
 
 **特徴:**  
 - **t=0 の真値**を基点に、**Δ を時間方向に累積**して絶対値を復元  
@@ -527,8 +519,7 @@ OpenFOAMで得た2D導電率マップ（時系列）を入力として、pyGIMLi
 **入出力:**  
 - **入力:**  
   - 予測スタック（例）：`conductivity.npy`（形状：N×T_pred×H×W）  
-  - 測定スタック（例）：`measured_training_data_*.npy`（形状：N×T_meas×H×W）  
-  - 設定ファイル（例）：`configs/compare_pred_norm.yml`  
+  - 測定スタック（例）：`training_data{seq}.npy`（形状：N×T_meas×H×W）  
 - **出力:**  
   - 比較画像（PNG）：`out_dir/seq{NNN}_predt{TTT}_meast{TTT}.png`（Pred／Measured を同一カラースケールで並置）
 

@@ -43,35 +43,43 @@ Key Behaviors & Assumptions
 - Output time length is T'-1 because t=0 initializes the measured map.
 - File naming embeds the chosen sequence index for traceability.
 
-Configuration (YAML)
---------------------
-Required keys:
-- input_dir         : directory containing train/test .npy files
-- positions_dir     : directory containing positions .npy
-- output_dir        : directory for outputs (created if missing)
-- train_file        : filename of training true data, e.g. "united_triangular_matrices.npy"
-- positions_file    : filename of positions, e.g. "positions_all.npy"
+# ===========================
+# YAML Configuration Guide — 04_generateTrainingData.py
+# ===========================
+# Each key defines the input type and its purpose for generating
+# *measured* time series from *true* resistivity maps using a fixed
+# per-time measurement position sequence.
 
-Optional keys:
-- test_file         : filename of test true data (if provided, test is processed)
-- sequence_selection:
-    mode            : "median" (default) or "fixed"
-    fixed_index     : int (required if mode == "fixed")
-- num_measurements  : int (default 1; current code path assumes 1)
-- save_basename     : base for output filenames (default "measured_training_data_sameRowColSeq")
-- save_seq_index    : bool, save chosen_seq_index.npy (default True)
+# === Required paths & filenames ===
+# input_dir (str): Directory containing true data .npy files.
+# positions_dir (str): Directory containing candidate position sequences .npy.
+# output_dir (str): Directory where outputs are written (created if missing).
+# train_file (str): Filename of training true data (shape: N × T × H × W).
+# positions_file (str): Filename of candidate positions (shape: S × T × 2; [col,row]).
 
-Outputs
--------
-- <output_dir>/<save_basename><seq_for_rc>.npy
-    shape (N, T'-1, H, W), dtype float32
-- <output_dir>/<save_basename><seq_for_rc>_test.npy  [if test_file exists]
-    shape (N_test, T_test'-1, H, W)
-- <output_dir>/chosen_seq_index.npy  (int)  [if save_seq_index=True]
+# === Optional inputs ===
+# test_file (str | null): Filename of test true data; if absent, train only.
+
+# === Sequence selection policy ===
+# sequence_selection.mode (str): "median" (default) or "fixed" — how to pick one sequence.
+# sequence_selection.fixed_index (int): Index to use when mode="fixed".
+
+# === Measurement settings ===
+# num_measurements (int): Measurements per time step (default 1; current logic assumes 1).
+
+# === Output naming ===
+# save_basename (str): Base name for output files (default "measured_training_data_sameRowColSeq").
+# save_seq_index (bool): Save chosen_seq_index.npy for traceability (default true).
+
+# --- Notes ---
+# • The chosen sequence provides one (col,row) per time step; only that pixel is updated.
+# • Time is clipped to available positions: T' = min(T, len(sequence)+1); outputs have length T'−1.
+# • NaNs in true data are replaced with 0.0 before processing.
+
 
 CLI Example
 -----------
-python 04_generateTrainingData.py --config configs/generate_training.yml
+python 04_generateTrainingData.py --config configs/generateTrainingData.yml
 
 Performance Tips
 ----------------

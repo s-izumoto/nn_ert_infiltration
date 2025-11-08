@@ -84,31 +84,57 @@ Assumptions
 
 Typical Usage
 -------------
-$ python 06_inferSequence.py --config path/to/config.yml
+$ python 06_inferSequence.py --config configs/inferSequence.yml
 
-Example YAML (minimal)
-----------------------
-data:
-  measured:
-    path: data/measured                    # file OR folder
-    pattern: "*.npy"                       # used only if "path" is a folder
-  united:
-    path: data/united_triangular_matrices.npy
-  use_time_context: true
-  mean_centered: true
-  use_normalization: false
-runtime:
-  device: "auto"
-  time_steps: 30
-  output_seq_length: 29
-model:
-  hidden_size: 512
-  checkpoint: "checkpoints"                # file OR folder
-io:
-  output_dir: "outputs/use_model"
-  out_npy_name: "outputs_pred_all_series.npy"
-  png_dir: "outputs/use_model/pred_png"
-  save_png: true
+
+# ===========================
+# YAML Configuration Guide — 06_inferSequence.py
+# ===========================
+# Keys for running Seq2Seq LSTM *inference* on triangular maps.
+# Paste this block at the top of inferSequence.yml (no example config below).
+
+# --- data.measured ---
+# data.measured.path    (str | Path): A single .npy file OR a folder of .npy files (shape: N×T×H×W).
+# data.measured.pattern (str): Glob used only when "path" is a folder (e.g., "*.npy").
+
+# --- data.united ---
+# data.united.path      (str | Path): Ground-truth stack .npy (N×T_full×H×W); t=0 is used for initialization.
+
+# --- data: preprocessing switches ---
+# data.use_diff             (bool): Use Δt differencing for inputs/targets.
+# data.use_normalization    (bool): Apply per-time-step min–max scaling using normalization_factors.npz.
+# data.normalization_factors(str | Path): .npz file OR directory containing it (auto-picks preferred/latest).
+# data.mean_centered        (bool): Subtract encoder-input means and add y-means back to predictions.
+# data.mean_values          (str | Path): .npz file OR directory containing "mean_values.npz".
+# data.use_time_context     (bool): Append a normalized time scalar [0,1] to each encoder step.
+# data.early                (bool): Keep only the first K steps (set K via early_steps).
+# data.early_steps          (int): Number of early steps to keep when early=true.
+# data.sparse_step          (int): Temporal stride (1 = no subsampling).
+# data.choose_index         (bool): Restrict to a subset of series given by index_list.
+# data.index_list           ([int]): Series indices to keep (used when choose_index=true).
+
+# --- runtime ---
+# runtime.device            ("auto"|"cpu"|"cuda"): Compute device (auto prefers CUDA if available).
+# runtime.time_steps        (int): Encoder input length (e.g., 30).
+# runtime.output_seq_length (int): Number of steps to predict (e.g., 29).
+
+# --- model ---
+# model.hidden_size         (int): LSTM hidden size (default 512).
+# model.num_layers          (int): Placeholder (implementation uses 2 stacked LSTMs).
+# model.dropout             (float): Placeholder (not used internally).
+# model.bidirectional       (bool): Placeholder (model is unidirectional here).
+# model.checkpoint          (str | Path): Checkpoint file OR folder (prefers "*best*.pt/pth/ckpt", else newest).
+
+# --- io ---
+# io.output_dir             (str | Path): Folder to save per-input prediction arrays (.npy).
+# io.out_npy_name           (str): Suffix for saved filename: "<measured_stem>__<out_npy_name>".
+# io.png_dir                (str | Path): Folder to save quick-look PNGs.
+# io.save_png               (bool): Save PNGs for each series (sum over time, t0, last).
+
+# --- notes ---
+# • Inputs/outputs are treated as triangular frames with row sizes [29,26,23,...,2] (step −3).
+# • Units: the loader safely inverts to σ or ρ via 1/x with clipping; NaN/Inf are sanitized.
+# • When directories are provided for .npz/ckpt, the script auto-resolves preferred or latest files.
 """
 
 

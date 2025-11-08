@@ -57,34 +57,49 @@ Performance notes
       slice is read into memory per time step.
 
 CLI usage
-    python 01_generateAppRes.py -c path/to/config.yml
-    # Optional overrides:
-    python 01_generateAppRes.py -c config.yml --workers 4 --sequences 0 3 7
+    python 01_generateAppRes.py ---config configs/generateAppRe.yml
 
-Minimal YAML keys (examples)
-    data_path: "../data/combined_conductivity_maps.npy"
-    output_dir: "visualizations_large"
-    scheme: "wa"
-    seed: 1337
-    noise:
-      level: 0.5       # [%] relative
-      abs: 1.0e-6      # [Ohm·m] floor
-    domain:
-      height: 1.0
-      width: 3.0
-      x_min: 0.0
-      y_min: 0.0
-    electrodes:
-      y:
-        start: 0.9     # [m]
-        end: 2.1       # [m]
-        n: 32
-    triangular:
-      first_row: 29    # measurements in row 0
-      step: 3          # per-row decrement
-    parallel:
-      max_workers: null   # or an integer
-    sequences: null       # or a list, e.g., [0, 2, 7]
+# ===========================
+# YAML Configuration Guide — 01_generateAppRes.py
+# ===========================
+# Each key defines the input type and its purpose for generating
+# synthetic apparent resistivity maps from OpenFOAM-derived conductivity fields.
+
+# Top-level keys
+# ---------------
+# data_path (str): Path to a 4-D conductivity array (N_seq, N_time, Ny, Nx) [S/m].
+# output_dir (str): Directory where the triangular apparent-resistivity stacks (.npy) are saved.
+# scheme (str): Electrode array type, e.g., "wa" for Wenner-alpha.
+# seed (int): Random seed for reproducibility when adding measurement noise.
+# sequences (list[int] | null): Sequence indices to process; if null, all sequences are used.
+
+# noise section
+# --------------
+# noise.level (float, %): Relative noise level (percentage of the measured value).
+# noise.abs (float, Ω·m): Absolute noise floor added to all measurements.
+
+# domain section (in meters)
+# ---------------------------
+# domain.height (float): Vertical size (x-direction) of the simulated domain.
+# domain.width  (float): Horizontal size (y-direction) of the simulated domain.
+# domain.x_min  (float): Minimum x-coordinate of the domain.
+# domain.y_min  (float): Minimum y-coordinate of the domain.
+
+# electrodes.y section (in meters)
+# --------------------------------
+# electrodes.y.start (float): Top position of the vertical electrode line (left boundary).
+# electrodes.y.end   (float): Bottom position of the vertical electrode line.
+# electrodes.y.n     (int): Number of equally spaced electrodes between start and end.
+
+# triangular section
+# -------------------
+# triangular.first_row (int): Number of elements in the first row of the triangular matrix
+#     (corresponding to the Wenner-alpha measurement layout).
+# triangular.step (int): Decrease in the number of elements per row from top to bottom.
+
+# parallel section
+# -----------------
+# parallel.max_workers (int | "auto" | null): Number of parallel processes ("auto" = automatic detection).
 
 Requirements
     - Python 3.x, NumPy, PyYAML, pyGIMLi (and its dependencies).
@@ -162,7 +177,7 @@ class AppConfig:
     - sequences   : optional subset of sequence indices to process
     """
     data_path: str
-    output_dir: str = "visualizations_large"
+    output_dir: str = "data/simulationAppRes"
     scheme: str = "wa"
     noise: NoiseCfg = NoiseCfg()
     seed: int = 1337
@@ -187,7 +202,7 @@ class AppConfig:
 
         return AppConfig(
             data_path=raw.get("data_path", "../data/combined_conductivity_maps.npy"),
-            output_dir=raw.get("output_dir", "visualizations_large"),
+            output_dir=raw.get("output_dir", "data/simulationAppRes"),
             scheme=raw.get("scheme", "wa"),
             noise=noise,
             seed=int(raw.get("seed", 1337)),

@@ -24,48 +24,58 @@ Typical Use Case:
     (or resistivity) map from a short history of measured maps in a dynamic
     infiltration scenario. This is useful for sanity-checking the trained model and
     for producing qualitative figures and quick diagnostics.
+    
+# ===========================
+# YAML Configuration Guide — 08_inferFirst.py
+# ===========================
+# Keys for first-step inference with a trained LSTM on triangular ERT maps.
+# Paste at the top of inferFirst.yml.
 
-Inputs (read from YAML):
-    model.checkpoint           : Path to a PyTorch checkpoint (.pt/.pth) that contains:
-                                 - model_state_dict
-                                 - input_dim, output_dim
-                                 - time_steps (unless overridden)
-                                 - flags used during training (early, diff, etc.)
-    model.device               : "auto" | "cuda" | "cpu" (default: auto)
-    model.override_time_steps  : Optional int to override the checkpoint time_steps.
+# --- model ---
+# model.checkpoint (str): Path to the trained PyTorch checkpoint (.pt/.pth).
+# model.device (str): "auto" | "cuda" | "cpu" device selection.
+# model.override_time_steps (int|null): Override T used at inference (optional).
 
-    data.measured_dir          : Folder containing the measured stack .npy
-    data.measured_file         : Filename of measured stack (shape ≈ (N, T-1, H, W))
-    data.truth_dir             : Folder containing the ground-truth stack .npy
-    data.truth_file            : Filename of truth stack (shape ≈ (N, T,   H, W))
-    data.invert_values         : If True, apply 1/x to measured and truth
-    data.unit_scale            : Multiplicative scale (e.g., 1000 for S/m → mS/m)
-    data.prepend_initial_truth : If True, prepend united[:,0] to measured along time
-    data.nan_fill_value        : Value used to replace NaNs before processing
+# --- data ---
+# data.measured_dir (str): Folder of measured stacks (.npy).
+# data.measured_file (str): Filename of measured stack (≈ (N, T-1, H, W)).
+# data.truth_dir (str): Folder of ground-truth stacks (.npy).
+# data.truth_file (str): Filename of ground-truth stack (≈ (N, T, H, W)).
+# data.invert_values (bool): Apply 1/x to convert ρ↔σ before use.
+# data.unit_scale (float): Multiply values to change units (e.g., 1000 for S/m→mS/m).
+# data.prepend_initial_truth (bool): Prepend truth at t=0 to measured along time.
+# data.nan_fill_value (float): Value to replace NaNs prior to processing.
 
-    norm.enabled               : If True, apply min–max scaling using:
-    norm.dir                   : Directory of normalization files
-    norm.normalization_factors : .npz with keys: time_step_min, time_step_max
-    norm.mean_values           : .npz with keys: Xmean (T × F_in), ymean (T × F_out)
-                                 Required if meanCentered is True.
+# --- norm ---
+# norm.enabled (bool): Enable min–max normalization of inputs.
+# norm.dir (str): Directory containing normalization .npz files.
+# norm.normalization_factors (str): .npz with time_step_min / time_step_max.
+# norm.mean_values (str): .npz with Xmean (T×Fin) and ymean (T×Fout) for mean-centering.
 
-    flags.early                : If True, truncate time dimension to flags.early_max_T
-    flags.early_max_T          : Max time length when early is True
-    flags.choose_index_enabled : If True, restrict to subset of series by index list
-    flags.choose_indices       : List of integer series indices
-    flags.sparse_enabled       : If True, stride time with flags.sparse_stride
-    flags.sparse_stride        : Positive integer stride along time axis
-    flags.diff_enabled         : If True, replace sequences with np.diff(..., axis=1)
-    flags.time_context_enabled : If True, append normalized time context to each input
-    flags.mean_centered_enabled: If True, subtract Xmean at input and add ymean at output
+# --- flags (must match training) ---
+# flags.early (bool): Truncate time length for early-window inference.
+# flags.early_max_T (int): Max time steps kept when early=true.
+# flags.choose_index_enabled (bool): Enable selecting specific series by index.
+# flags.choose_indices (list[int]): Series indices to keep when enabled.
+# flags.sparse_enabled (bool): Enable temporal subsampling (stride).
+# flags.sparse_stride (int): Stride size for temporal subsampling.
+# flags.diff_enabled (bool): Use first differences along time for X and y.
+# flags.time_context_enabled (bool): Append normalized time context to inputs.
+# flags.mean_centered_enabled (bool): Subtract Xmean / add back ymean[0] at output.
 
-    io.output_dir              : Output folder for PNGs and .npy artifacts
-    io.save_figures            : If True, save comparison and/or input frames
-    io.save_pred_stack         : If True, save all predictions as one .npy stack
-    io.cmap                    : Matplotlib colormap name (e.g., "viridis")
+# --- io ---
+# io.output_dir (str): Output directory for figures and arrays.
+# io.save_figures (bool): Save comparison and input-frame PNGs.
+# io.save_pred_stack (bool): Save all predicted images to one .npy.
+# io.cmap (str): Matplotlib colormap name for renders (e.g., "viridis").
 
-    visual.save_compare        : If True, export side-by-side Predicted vs True PNG
-    visual.save_input_frames   : If True, export per-time-step input frames PNG
+# --- visual ---
+# visual.save_compare (bool): Export Predicted vs True side-by-side PNGs.
+# visual.save_input_frames (bool): Export per-time-step input frame PNGs.
+
+# Notes:
+# - Triangular maps use row sizes [29, 26, 23, …, 1] for flatten/de-flatten.
+# - Ensure flags (diff/sparse/timeContext/meanCentered/T) match the checkpoint.
 
 Data Shapes (after loading, before flags):
     measured: (N, T-1, H, W)

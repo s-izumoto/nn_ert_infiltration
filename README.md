@@ -114,7 +114,7 @@ For each time step of OpenFOAM output, pyGIMLi performs forward modeling using t
 
 **Example:**
 ```bash
-python 01_generateAppRes.py --config configs/01_generate.yml
+python 01_generateAppRes.py --config configs/generateAppRes.yml
 ```
 
 ---
@@ -124,7 +124,7 @@ Combine the exported triangular matrix stacks and split them into training and t
 
 **Example:**
 ```bash
-python 02_uniteTriangular.py --config configs/02_unite.yml
+python 02_uniteTriangular.py --config configs/unitedTriangular.yml
 ```
 
 ---
@@ -134,7 +134,7 @@ Select measurement points with the largest difference between the true and measu
 
 **Example:**
 ```bash
-python 03_generateMeasDesign.py --config configs/03_meas_design.yml
+python 03_generateMeasDesign.py --config configs/generateMeasDesign.yml
 ```
 
 ---
@@ -144,7 +144,7 @@ Select a representative measurement sequence (e.g., one row) and apply it to all
 
 **Example:**
 ```bash
-python 04_generateTrainingData.py --config configs/04_generate_training.yml
+python 04_generateTrainingData.py --config configs/generateTrainingData.yml
 ```
 
 ---
@@ -154,7 +154,7 @@ Train an LSTM Encoder–Decoder (Seq2Seq) model to predict Δ of the true maps f
 
 **Example:**
 ```bash
-python 05_trainingSequence.py --config configs/05_seq_train.yml
+python 05_trainingSequence.py --config configs/trainingSequence.yml
 ```
 
 ---
@@ -164,7 +164,7 @@ Use the trained Seq2Seq model to infer Δ over the entire time series from measu
 
 **Example:**
 ```bash
-python 06_inferSequence.py --config configs/06_seq_infer.yml
+python 06_inferSequence.py --config configs/inferSequence.yml
 ```
 
 ---
@@ -174,7 +174,7 @@ Train a single-step model that predicts the conductivity map at the next time st
 
 **Example:**
 ```bash
-python 07_trainingFirst.py --config configs/07_first_train.yml
+python 07_trainingFirst.py --config configs/trainingFirst.yml
 ```
 
 ---
@@ -184,7 +184,7 @@ Use the trained one-step model to reconstruct the conductivity map at t=1 from t
 
 **Example:**
 ```bash
-python 08_inferFirst.py --config configs/08_first_infer.yml
+python 08_inferFirst.py --config configs/inferFirst.yml
 ```
 
 ---
@@ -194,7 +194,7 @@ Accumulate the initial conductivity and predicted Δ series to reconstruct the f
 
 **Example:**
 ```bash
-python 09_inferWhole.py --config configs/09_infer_whole.yml
+python 09_inferWhole.py --config configs/inferWhole.yml
 ```
 
 ---
@@ -204,7 +204,7 @@ Compare reconstructed (predicted) and measured conductivity maps under a common 
 
 **Example:**
 ```bash
-python 10_comparePredAndNorm.py --config configs/10_compare.yml
+python 10_comparePredAndNorm.py --config configs/comparePredAndNorm.yml
 ```
 
 ---
@@ -235,7 +235,7 @@ python 10_comparePredAndNorm.py --config configs/10_compare.yml
 ---
 
 ## **Detailed Description of Each Script**
-Below is an explanation of the purpose and main outputs for each script.
+This section summarizes each script’s purpose and primary inputs/outputs. Filenames and paths follow the YAML configs.
 
 ---
 
@@ -253,7 +253,6 @@ Each time step is reshaped into a **triangular matrix form (29, 26, 23, …, 1)*
 **Input / Output:**  
 - **Input:**  
   - Conductivity fields from OpenFOAM (NumPy, shape = N×T×H×W)  
-  - YAML configuration file  
 - **Output:**  
   - Triangular-matrix apparent-resistivity stack (true/reference maps, `.npy`)  
 
@@ -265,7 +264,7 @@ Loads multiple **triangular-matrix apparent-resistivity files** (e.g., `triangul
 checks their shapes, and **merges/splits them into training and test datasets**.  
 
 **Process Overview:**  
-1. Search the target folder for `.npy` files (e.g., `visualizations_large/triangular_matrix_seq_*.npy`)  
+1. Search the target folder for `.npy` files (e.g., `data/simulationAppRes/triangular_matrix_seq_*.npy`)  
 2. Randomly split them into **train/test** sets based on the YAML configuration (reproducible)  
 3. Load each file and stack in the form `(T, H, W)`  
 4. Save as `(N_train, T, H, W)` and `(N_test, T, H, W)` arrays  
@@ -274,7 +273,6 @@ checks their shapes, and **merges/splits them into training and test datasets**.
 **Input / Output:**  
 - **Input:**  
   - Triangular-matrix apparent-resistivity files for each sequence (`.npy`, shape = T×H×W)  
-  - YAML configuration file  
 - **Output:**  
   - Combined training data: `(N_train, T, H, W)`  
   - Combined test data: `(N_test, T, H, W)`  
@@ -299,8 +297,7 @@ and **measurement-location data (`indices`)**.
 
 **Input / Output:**  
 - **Input:**  
-  - True apparent-resistivity maps (`.npy`, shape = N_seq×N_time×H×W)  
-  - YAML configuration file  
+  - True apparent-resistivity maps （`united_triangular_matrices.npy`, shape = N_seq×N_time×H×W）  
 - **Output:**  
   - Time-series measured maps: `measured_training_data.npy` (shape = N_seq×(N_time−1)×H×W)  
   - Measurement-location indices: `measurement_indices.npy` (shape = N_seq×(N_time−1)×K×2)  
@@ -330,12 +327,12 @@ This process reproduces a consistent measurement workflow across all time-series
 **Input / Output:**  
 - **Input:**  
   - True apparent-resistivity maps: `united_triangular_matrices.npy` (shape = N×T×H×W)  
-  - Measurement position sequence: `positions_all.npy` (shape = S×T×2, each element [col, row])  
-  - YAML configuration file  
+  - (Optional) Test true apparent-resistivity maps: `united_triangular_matrices_test.npy`（shape = N×T×H×W）
+  - Measurement position sequence: `measurement_indices.npy` (shape = S×T×2, each element [col, row])  
 
 - **Output:**  
-  - Measured maps: `measured_training_data_sameRowColSeq{index}.npy` (shape = N×(T−1)×H×W)  
-  - (Optional) Test measured maps: `measured_training_data_sameRowColSeq{index}_test.npy`  
+  - Measured maps: `training_data{index}.npy` (shape = N×(T−1)×H×W)  
+  - (Optional) Test measured maps: `training_data{index}_test.npy`  
   - Selected sequence index: `chosen_seq_index.npy`  
 
 **Features:**  
@@ -369,9 +366,8 @@ train a two-layer **LSTM Encoder–Decoder (Seq2Seq)** model that predicts futur
 
 **Input / Output:**  
 - **Input:**  
-  - Measured maps: `(N, T, H, W)`  
-  - True maps: `(N, T, H, W)`  
-  - YAML configuration file (preprocessing/model/training settings)  
+  - Measured maps (`training_data{index}.npy`, shape = (N, T, H, W))  
+  - True maps (`united_triangular_matrices.npy`, shape = (N, T, H, W))  
   - When specifying folders, **the number and order of measured and united files must match**.  
 - **Output (saved in `results_dir`):**  
   - Grid-search results: `grid_search_results.csv`, `best_config.txt`, per-fold CSV, `best_cv_indices.npz`  
@@ -407,7 +403,6 @@ Inputs are the **measured maps** from `04_generateTrainingData.py` and the **tru
   - **True maps:** from `02_uniteTriangular.py` (e.g., `united_triangular_matrices.npy`)  
   - **Trained model:** from `05_trainingSequence.py` (e.g., `best_model.pt` or `checkpoints/`)  
   - **Normalization files (optional):** `normalization_factors_*.npz`, `mean_values.npz`  
-  - **Configuration:** YAML (e.g., `configs/infer_sequence.yml`)  
 - **Output:**  
   - Predicted Δ maps: `<measured_stem>__pred_seq.npy` (shape = N_series×T_pred×H×W)  
   - (Optional) Visualization: `pred_png/` with PNG outputs (total, t=0, final step, etc.)  
@@ -474,11 +469,10 @@ It reproduces the same preprocessing steps used in training (differencing, norma
 
 **Input / Output:**  
 - **Input:**  
-  - Measured maps: `measured_training_data*.npy` (from `04_generateTrainingData.py`)  
+  - Measured maps: `training_data{seq}.npy` (from `04_generateTrainingData.py`)  
   - True maps: `united_triangular_matrices.npy` (from `02_uniteTriangular.py`)  
   - Trained model: `best_model_first.pt` or `single_output_lstm_model.pt` (from `07_trainingFirst.py`)  
   - (Optional) Normalization/mean files: `normalization_factors_*.npz`, `mean_values_*.npz`  
-  - YAML configuration: `configs/infer_first.yml`  
 - **Output:**  
   - Predicted t=1 maps: `pred_images_all.npy` (2D triangular maps per sequence)  
   - (Optional) Comparison images: `compare_series_*.png` (Predicted vs True)  
@@ -517,7 +511,7 @@ The reconstructed maps are compared to the **true data** and evaluated using **M
 - **Output:**  
   - **Reconstructed stack (absolute values):** `conductivity.npy` (shape = N×T×H×W; T = min aligned length)  
   - **Evaluation summary:** `mape_values.txt` (lists MAPE[%] per sequence)  
-  - **Comparison images (optional):** `compareWithTestData/measurement_locations_seq{idx}_timestep_{t}.png`  
+  - **Comparison images (optional):** `measurement_locations_seq_{seq}_timestep_{time}.png`  
 
 **Features:**  
 - Reconstructs absolute values by **cumulative summation of Δ over time from the true t=0 frame**  

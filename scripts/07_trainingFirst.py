@@ -93,53 +93,65 @@ Saved under `outputs.base_dir` (see YAML):
     `input_dim`, `output_dim`, and `time_steps`.
   - `loss_history_best_retrain.csv` and `loss_curve_best_retrain_first.png`.
 
-YAML quick reference
---------------------
-```yaml
-inputs:
-  measured_dir: path/to/dir
-  measured_file: measured_training_data.npy
-  united_dir: path/to/dir
-  united_file: united_triangular_matrices.npy
+  
+# ===========================
+# YAML Configuration Guide — 07_trainingFirst.py
+# ===========================
+# Keys for training a first-stage LSTM regressor that predicts the *next*
+# flattened triangular map from a short input window. Paste at the top of trainFirst.yml.
 
-preprocess:
-  early: false          # if true, keep only [:early_limit] timesteps
-  early_limit: 50
-  choose_index: []      # optional subset of series indices
-  sparse: false
-  sparse_stride: 10
-  diff: false
-  normalization: false
-  mean_centered: true
-  time_steps: 4         # window length T
-  time_context: false   # add normalized time channel
+# --- inputs ---
+# inputs.measured_dir (str): Folder containing measured stacks (.npy) in ρ [Ω·m].
+# inputs.measured_file (str): Filename of measured stack (shape N×T×H×W).
+# inputs.united_dir (str): Folder containing true stacks (.npy) in ρ [Ω·m].
+# inputs.united_file (str): Filename of true stack (shape N×T×H×W).
 
-model:
-  hidden_size: 512
-  num_layers: 2
+# --- preprocess ---
+# preprocess.early (bool): Use only the early portion of each time series.
+# preprocess.early_limit (int): Max time steps to keep when early=true.
+# preprocess.choose_index ([int]): Subset of series indices to keep (optional).
+# preprocess.sparse (bool): Subsample the time axis by a fixed stride.
+# preprocess.sparse_stride (int): Temporal stride when sparse=true (e.g., 10).
+# preprocess.diff (bool): Replace series with time differences (Δt) for X and y.
+# preprocess.normalization (bool): Per-time-step min–max normalization (save NPZ).
+# preprocess.mean_centered (bool): Per-time-step mean removal (save NPZ).
+# preprocess.time_steps (int): Encoder window length T (e.g., 4, 30).
+# preprocess.time_context (bool): Append normalized time channel [0,1] to encoder inputs.
 
-training:
-  lrs: [0.001, 0.0005, 0.0001]
-  batch_sizes: [4, 8, 16]
-  kfolds: 5
-  epochs: 100
-  seed: 42
-  num_workers: 0
-  retrain_best: true
+# --- model ---
+# model.hidden_size (int): LSTM hidden size (default 512).
+# model.num_layers (int): Number of stacked LSTM layers (default 2).
 
-outputs:
-  base_dir: results_first
-  norm_in_npz: norm_input.npz
-  norm_out_npz: norm_output.npz
-  mean_values_npz: mean_values.npz
-  grid_search_csv: grid_search_results.csv
-  best_config_txt: best_config.txt
-  cv_indices_npz: best_cv_indices.npz
-  retrain_indices_npz: best_retrain_indices.npz
-  best_model_pt: best_model_first.pt
-  single_payload_pt: single_output_lstm_model.pt
-  loss_history_csv: loss_history_best_retrain.csv
-  loss_curve_png: loss_curve_best_retrain_first.png
+# --- training ---
+# training.lrs ([float]): Learning rates to grid-search (e.g., [1e-3, 5e-4, 1e-4]).
+# training.batch_sizes ([int]): Batch sizes to grid-search (e.g., [4, 8, 16]).
+# training.kfolds (int): Number of cross-validation folds.
+# training.epochs (int): Epochs per fold.
+# training.seed (int): RNG seed for NumPy/PyTorch.
+# training.num_workers (int): DataLoader workers (0 for compatibility).
+# training.retrain_best (bool): Retrain best (LR, batch) on an 80/20 split and save artifacts.
+
+# --- outputs ---
+# outputs.base_dir (str): Root directory to save all artifacts.
+# outputs.norm_in_npz (str): Filename for input normalization stats (NPZ).
+# outputs.norm_out_npz (str): Filename for output normalization stats (NPZ).
+# outputs.mean_values_npz (str): Filename for mean-centering stats (NPZ).
+# outputs.grid_search_csv (str): CSV summary over folds and grid combos.
+# outputs.best_config_txt (str): Text file with best LR, batch, and score.
+# outputs.cv_indices_npz (str): NPZ with indices used in each CV fold.
+# outputs.retrain_indices_npz (str): NPZ with 80/20 indices for final retrain.
+# outputs.best_model_pt (str): Torch state_dict of the retrained best model.
+# outputs.single_payload_pt (str): Single-file payload (weights + I/O dims + T).
+# outputs.loss_history_csv (str): CSV of retrain loss history.
+# outputs.loss_curve_png (str): PNG curve of retrain losses (if enabled).
+
+# --- notes ---
+# • Inputs/targets are converted internally: σ = 1000 / ρ, NaNs→0.
+# • True t=0 is prepended to measured before windowing.
+# • Triangular frames are flattened with row sizes [29,26,23,...,2,1];
+#   only the *first* target step of each window is used for training.
+
+  
 """
 
 import os

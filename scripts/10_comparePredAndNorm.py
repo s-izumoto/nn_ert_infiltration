@@ -61,25 +61,35 @@ Outputs
     seq{NNN}_predt{TTT}_meast{TTT}.png
 - A progress bar shows save progress; a summary is printed at the end.
 
-Typical YAML
-------------
-# Example: config.yml
-pred_file: null
-pred_dir: "data/output/whole"
-pred_filename: "conductivity.npy"
-measured_file: null
-measured_dir: "data/training"
-measured_filename: "measured_training_data_sameRowColSeq34_test.npy"
+# ===========================
+# YAML Configuration Guide — 10_comparePredAndNorm.py
+# ===========================
+# Keys for side-by-side PNG comparison of Predicted vs Measured conductivity.
+# Pred is used as-is; Measured is visualized as (1000 / measured) in mS·m⁻¹.
 
-out_dir: "compareWithTestData/pred_vs_measured"
-seq: [0, 1, 2]        # or null to process all sequences
-start_pred: 1
-max_pred_steps: 31
-meas_step_factor: 10
-cmap: "hot"
-nan_to_zero: false
-per_sequence_vrange: true
-dpi: 150
+# --- inputs: file locations (choose EITHER full path OR dir+filename) ---
+# pred_file (str|null): Full path to predicted stack (.npy) with shape (N,T,H,W).
+# pred_dir (str): Directory of predicted stack when using dir + filename.
+# pred_filename (str): Filename of predicted stack when using dir + filename.
+# measured_file (str|null): Full path to measured stack (.npy) with shape (N,T,H,W).
+# measured_dir (str): Directory of measured stack when using dir + filename.
+# measured_filename (str): Filename of measured stack when using dir + filename.
+
+# --- outputs ---
+# out_dir (str): Folder to save comparison PNGs (created if missing).
+
+# --- selection & timing ---
+# seq (list[int]|null): Sequence indices to render; null means all sequences.
+# start_pred (int): First prediction time index to plot (inclusive).
+# max_pred_steps (int): Max number of prediction frames to plot starting at start_pred.
+# meas_step_factor (int): Map pred_t → meas_t via (meas_t = pred_t * factor - 1).
+
+# --- visualization ---
+# cmap (str): Matplotlib colormap (e.g., "hot", "viridis").
+# nan_to_zero (bool): If true, replace NaN/±Inf with 0 just before plotting.
+# per_sequence_vrange (bool): If true, compute vmin/vmax per sequence; else global.
+# dpi (int): Output image resolution in dots per inch.
+
 
 CLI examples
 ------------
@@ -235,7 +245,7 @@ def main():
     # --- Resolve file paths ---
     pred_path = _resolve_path(cfg.get("pred_file"), cfg.get("pred_dir"), cfg.get("pred_filename"))
     meas_path = _resolve_path(cfg.get("measured_file"), cfg.get("measured_dir"), cfg.get("measured_filename"))
-    out_dir = Path(cfg.get("out_dir", "compareWithTestData/pred_vs_measured"))
+    out_dir = Path(cfg.get("out_dir", "compareWithTestData"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Load data ---
