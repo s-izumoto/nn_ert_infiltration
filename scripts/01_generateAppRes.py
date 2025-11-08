@@ -38,7 +38,7 @@ Output
 Assumptions & conventions
     - Units: input is **conductivity** σ in S/m; the forward model uses **resistivity**
       ρ = 1/σ in Ohm·m; the exported apparent resistivity `rhoa` is also in Ohm·m.
-    - Geometry: rectangular domain [x_min, x_min+width] × [y_min, y_min+height].
+    - Geometry: rectangular domain [x_min, x_min+height] × [y_min, y_min+width].
       Electrodes lie on the **left boundary** (x = x_min) with evenly spaced
       y-coordinates between `electrodes.y.start` and `electrodes.y.end`.
     - Default electrode count is 32 (≈4 cm spacing if the y-range is set accordingly);
@@ -70,8 +70,8 @@ Minimal YAML keys (examples)
       level: 0.5       # [%] relative
       abs: 1.0e-6      # [Ohm·m] floor
     domain:
-      width: 1.0
-      height: 3.0
+      height: 1.0
+      width: 3.0
       x_min: 0.0
       y_min: 0.0
     electrodes:
@@ -121,8 +121,8 @@ class NoiseCfg:
 @dataclass
 class DomainCfg:
     """Rectangular domain (x rightwards, y upwards). Units are meters."""
-    width: float = 1.0
-    height: float = 3.0
+    height: float = 1.0
+    width: float = 3.0
     x_min: float = 0.0
     y_min: float = 0.0
 
@@ -213,8 +213,8 @@ def _create_refined_mesh(cfg: AppConfig):
     (left boundary) to improve forward simulation accuracy.
     """
     x_min, y_min = cfg.domain.x_min, cfg.domain.y_min
-    x_max = x_min + cfg.domain.width
-    y_max = y_min + cfg.domain.height
+    x_max = x_min + cfg.domain.height
+    y_max = y_min + cfg.domain.width
     world = mt.createRectangle(start=[x_min, y_min], end=[x_max, y_max], marker=1)
 
     # Light refinement near electrodes (insert nodes close to the left side).
@@ -265,8 +265,8 @@ def _calc_apparent_resistivity_for_t(cfg: AppConfig, res_map_2d: np.ndarray):
     ny, nx = res_map_2d.shape
 
     x_min, y_min = cfg.domain.x_min, cfg.domain.y_min
-    x_max = x_min + cfg.domain.width
-    y_max = y_min + cfg.domain.height
+    x_max = x_min + cfg.domain.height
+    y_max = y_min + cfg.domain.width
 
     for c in mesh.cells():
         cx, cy = float(c.center()[0]), float(c.center()[1])
