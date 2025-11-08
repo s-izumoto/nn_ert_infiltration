@@ -77,9 +77,9 @@ forward modeling with pyGIMLi using a Wenner–alpha electrode array configurati
 ### **Physical Quantity and Unit**
 - **Electrical conductivity σ [S/m]** (scalar, positive real value)  
   Inside `01_generateAppRes.py`, it is converted as:  
-  \[
-  ρ = \frac{1}{σ}
-  \]
+  $$
+  \\rho = \\frac{1}{\\sigma}
+  $$
   to compute the **apparent resistivity ρₐ [Ω·m]**.
 
 ---
