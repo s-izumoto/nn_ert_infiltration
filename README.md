@@ -2,7 +2,7 @@
 
 This workflow combines **physics-based simulations using OpenFOAM** with **LSTM/Seq2Seq neural network models** to reconstruct **apparent resistivity fields during water infiltration into soil** obtained from Electrical Resistivity Tomography (ERT) measurements with high temporal and spatial resolution.  
 By interpolating the original ERT measurements, the workflow can potentially enhance the **temporal and spatial resolution by approximately ×15**. Example results can be viewed as videos in the `movie/` folder.
-
+> ℹ️ For an overview of key terms such as ERT, infiltration, inverse analysis, and electrode array, please refer to the “📘 Background” section at the end of this README.
 ---
 
 ## Summary (TL;DR)
@@ -547,3 +547,86 @@ exporting synchronized PNG images (units: mS·m⁻¹).
 - Default colormap is `"hot"`, but can be modified per project preference  
 
 ---
+
+
+## 📘 Background Explanation
+
+### Electrical Resistivity Tomography (ERT)
+**Electrical Resistivity Tomography (ERT)** is a **geophysical imaging technique** used to infer subsurface structures and moisture conditions from their **electrical resistivity**.  
+Multiple electrodes are placed on the ground surface or in boreholes; **a pair of electrodes (A, B)** injects current, and **another pair (M, N)** measures the resulting potential difference.  
+By repeating this measurement with different electrode combinations, one obtains data to reconstruct the **subsurface resistivity distribution (ρ)**.  
+Because resistivity depends on **water content, salinity, and soil or rock type**, ERT enables **non-destructive monitoring of groundwater infiltration, saltwater intrusion, contaminant transport, and subsurface structure**.
+
+---
+
+### Electrode Arrays
+An **electrode array** defines the **measurement scheme** for using multiple electrodes (e.g., 32) placed along the surface.  
+It specifies how pairs of electrodes are chosen for **current injection (A–B)** and **potential measurement (M–N)**, and how these combinations are sequenced.  
+With 32 electrodes, the number of possible A–B–M–N combinations is extremely large, and the **order and spacing** of the chosen combinations greatly affect the investigation depth, sensitivity distribution, and noise characteristics.  
+Common electrode array types include:
+
+| Array | Description | Typical Application |
+|:--|:--|:--|
+| **Wenner array** | Four electrodes (A–M–N–B) equally spaced; simple configuration. | Robust to noise, suited for shallow structures |
+| **Schlumberger array** | Current electrodes (A, B) far apart; potential electrodes (M, N) close together. | Higher sensitivity to deeper structures |
+| **Dipole–Dipole array** | Current and potential dipoles separated. | High spatial resolution but more noise-sensitive |
+| **Gradient array** | Fixed current electrodes, many potential electrodes measured simultaneously. | High measurement efficiency |
+
+This repository adopts the **Wenner–alpha array** as the reference configuration.
+
+---
+
+### Apparent Resistivity
+ERT directly measures **voltage differences and currents** between electrodes.  
+From these observations, one computes the **apparent resistivity**, which represents an *average* of the true resistivity structure.  
+It is the theoretical resistivity of a homogeneous half-space that would produce the same voltage and current, serving as a **first-order indicator before inversion**.  
+The spatial distribution of apparent resistivity reflects the underlying resistivity trends; in this repository, it is computed via **forward modelling with pyGIMLi**.
+
+---
+
+### Forward Modelling
+**Forward modelling** calculates the expected **observations (voltages or apparent resistivity)** from a **known physical property field** (e.g., conductivity map).  
+It is the counterpart of **inversion**.  
+In this repository, conductivity fields obtained from OpenFOAM are used as inputs to pyGIMLi to compute **apparent resistivity maps** for the **Wenner–alpha array**.
+
+---
+
+### Inversion
+In ERT, the measurements correspond to **surface potential differences** for each electrode configuration, while the goal is to estimate the **subsurface resistivity distribution**.  
+The numerical process of finding the subsurface model that best explains the observed data is called **inversion**.  
+Here, **pyGIMLi** performs the inversion to reconstruct **time-varying subsurface resistivity fields** from **sequentially updated measurements**.
+
+---
+
+### pyGIMLi (Python Geophysical Inversion and Modelling Library)
+**pyGIMLi** is an open-source library for numerical modelling and inversion in geophysics.  
+It supports methods such as **ERT**, **Induced Polarization (IP)**, and **Spectral Induced Polarization (SIP)**, and performs **electric-field simulation, sensitivity analysis, and inversion** based on the finite-element method (FEM).  
+In this repository, pyGIMLi is used to **numerically reproduce both forward and inverse ERT simulations** for the **Wenner–alpha array**, generating **apparent resistivity maps** from **OpenFOAM-simulated infiltration results**.
+
+---
+
+### Infiltration
+**Infiltration** refers to the process by which water **penetrates the soil surface and moves into the subsurface** due to rainfall or irrigation.  
+In the topsoil, infiltration occurs very rapidly, making it difficult for conventional ERT acquisition—limited by its temporal resolution—to **capture the movement of the infiltration front in real time**.  
+However, characterizing near-surface infiltration is crucial for evaluating **soil permeability and infiltration capacity**.  
+This repository uses OpenFOAM to **numerically reproduce near-surface water infiltration with high temporal resolution**, and then analyzes the corresponding ERT responses.  
+This provides a **physical foundation for visualizing and interpolating fast infiltration dynamics in the surface layer**.
+
+---
+
+### OpenFOAM — Numerical Simulation of Infiltration
+**OpenFOAM** is an **open-source computational fluid dynamics (CFD) software** capable of simulating fluid flow, multiphase transport, heat transfer, and reactive processes.  
+Here, OpenFOAM is used to **simulate the time-evolving infiltration of water into soil**, producing **cell-wise distributions of moisture, salinity, and saturation** that are then converted into **electrical conductivity (σ) maps**.  
+
+These conductivity maps are passed to pyGIMLi, converted to **resistivity (ρ = 1/σ)**, and used for **ERT forward modelling** to compute **apparent resistivity maps**.  
+Thus, OpenFOAM serves as the **physics-based data-generation stage** of the workflow, providing virtual “true states” of the subsurface.
+
+---
+
+### 🧩 Summary
+- **ERT** estimates subsurface **resistivity distributions** by injecting current through multiple electrodes and measuring resulting voltage differences.  
+- The **electrode array** defines how current (A–B) and potential (M–N) electrodes are combined, controlling sensitivity and depth. The **Wenner–alpha array** is used as the reference configuration here.  
+- **OpenFOAM** numerically reproduces the **infiltration of water or saline water into soil**, producing **conductivity fields (σ)** as input for ERT simulations.  
+- **pyGIMLi** performs **forward modelling** to compute apparent resistivity maps from these fields and **inversion** to reconstruct subsurface resistivity structures.  
+- **Apparent resistivity** represents the measured, “apparent” resistivity prior to inversion and serves as the basis for estimating the true subsurface resistivity.  
+- By using deep learning to interpolate or reconstruct rapid resistivity changes caused by **surface infiltration**, this approach enables **quantitative evaluation of soil infiltration capacity near the surface**.
