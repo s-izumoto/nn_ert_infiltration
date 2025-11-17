@@ -45,7 +45,7 @@ By interpolating the original ERT measurements, the workflow can potentially enh
 - **Electrode spacing:** 4 cm  
 - **Measurement interval:** 5 seconds  
 - **Measurement pattern:** The measurement design selected in `04_generateTrainingData.py`  
-- **Infiltration condition:** The central 30 cm of the soil surface is continuously saturated with a **0.0885 mol/L NaCl** solution  
+- **Infiltration condition:** The central area of the soil surface, within a 30-cm-diameter circle, is kept continuously saturated with a **0.0885 mol/L NaCl** solution.
 
 ---
 ## **OpenFOAM Output → NumPy Input (`.npy`) Specification**
@@ -57,7 +57,9 @@ forward modeling with pyGIMLi using a Wenner–alpha electrode array configurati
 ---
 
 ### **Domain (Physical Dimensions)**
-- The simulation domain has dimensions **width = 3.0 m × height = 1.0 m** (**y ∈ [0, 3.0] m**, **x ∈ [0, 1.0] m**).  
+- The OpenFOAM simulation domain is **3.0 m wide, 1.0 m high, and 1.0 m in the z-direction**  (**y ∈ [0, 3.0] m**, **x ∈ [0, 1.0] m**, **z ∈ [0, 1.0] m**).  
+  The cross-section at z = 0.5 is used as the pyGIMLi simulation domain.
+- The pyGIMLi simulation domain is **3.0 m wide, 1.0 m high**  (**y ∈ [0, 3.0] m**, **x ∈ [0, 1.0] m**). 
   The origin is assumed to be at the bottom-left corner (**x = 0.0 m**, **y = 0.0 m**).  
   The input array `(Ny, Nx)` corresponds to an evenly spaced grid over this physical size.
 
