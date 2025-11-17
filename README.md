@@ -1,12 +1,12 @@
-# ERT — Water Infiltration into Soil + Neural Completion
+# ERT — Water (solute) Infiltration into Soil + Neural Completion
 
-This workflow combines **physics-based simulations using OpenFOAM** with **LSTM/Seq2Seq neural network models** to reconstruct **apparent resistivity fields during water infiltration into soil** obtained from Electrical Resistivity Tomography (ERT) measurements with high temporal and spatial resolution.  
+This workflow combines **physics-based simulations using OpenFOAM** with **LSTM/Seq2Seq neural network models** to reconstruct **apparent resistivity fields during solute infiltration into soil** obtained from Electrical Resistivity Tomography (ERT) measurements with high temporal and spatial resolution.  
 By interpolating the original ERT measurements, the workflow can potentially enhance the **temporal and spatial resolution by approximately ×15**. Example results can be viewed as videos in the `movie/` folder.
 > ℹ️ For an overview of key terms such as ERT, infiltration, inverse analysis, and electrode array, please refer to the “📘 Background” section at the end of this README.
 ---
 
 ## Summary (TL;DR)
-- **Objective:** To fill spatial and temporal gaps in ERT measurements of **water infiltration into soil** using a neural network trained on synthetic data.  
+- **Objective:** To fill spatial and temporal gaps in ERT measurements of **water (solute) infiltration into soil** using a neural network trained on synthetic data.  
   Specifically, the model estimates the full-domain true resistivity map from measured maps in which only a limited area has been updated.
 - **Prerequisite:** This workflow requires **numerical simulation results under various soil conditions corresponding to the measurement settings** described later.  
   These data are obtained, for example, from simulations of infiltration processes conducted in advance using the open-source fluid-dynamics software **OpenFOAM**, and serve as inputs for reproducing ERT measurements numerically.
@@ -611,14 +611,14 @@ In this repository, pyGIMLi is used to **numerically reproduce both forward and 
 **Infiltration** refers to the process by which water **penetrates the soil surface and moves into the subsurface** due to rainfall or irrigation.  
 In the topsoil, infiltration occurs very rapidly, making it difficult for conventional ERT acquisition—limited by its temporal resolution—to **capture the movement of the infiltration front in real time**.  
 However, characterizing near-surface infiltration is crucial for evaluating **soil permeability and infiltration capacity**.  
-This repository uses OpenFOAM to **numerically reproduce near-surface water infiltration with high temporal resolution**, and then analyzes the corresponding ERT responses.  
+This repository uses OpenFOAM to **numerically reproduce near-surface water (solute) infiltration with high temporal resolution**, and then analyzes the corresponding ERT responses.  
 This provides a **physical foundation for visualizing and interpolating fast infiltration dynamics in the surface layer**.
 
 ---
 
 ### OpenFOAM — Numerical Simulation of Infiltration
 **OpenFOAM** is an **open-source computational fluid dynamics (CFD) software** capable of simulating fluid flow, multiphase transport, heat transfer, and reactive processes.  
-Here, OpenFOAM is used to **simulate the time-evolving infiltration of water into soil**, producing **cell-wise distributions of moisture, salinity, and saturation** that are then converted into **electrical conductivity (σ) maps**.  
+Here, OpenFOAM is used to **simulate the time-evolving infiltration of water (solute) into soil**, producing **cell-wise distributions of moisture, salinity, and saturation** that are then converted into **electrical conductivity (σ) maps**.  
 
 These conductivity maps are passed to pyGIMLi, converted to **resistivity (ρ = 1/σ)**, and used for **ERT forward modelling** to compute **apparent resistivity maps**.  
 Thus, OpenFOAM serves as the **physics-based data-generation stage** of the workflow, providing virtual “true states” of the subsurface.
